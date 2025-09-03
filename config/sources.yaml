@@ -1,0 +1,6 @@
+sources:
+  - './input_examples/receita1.txt'
+  - './input_examples/receita2.docx'
+  - './input_examples/receita3.pdf'
+  - './input_examples/planilha_receitas.xlsx'
+  - 'https://tudogostoso.com.br/receita/123456-lasanha'

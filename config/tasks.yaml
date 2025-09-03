@@ -1,0 +1,196 @@
+task_read_sources:
+  description: |
+    Extract complete content from all sources in {sources}.
+    
+    - Local files: Use multi_reader_tool
+    - URLs: Use web_scraping_tool
+    - Maintain source identification
+    
+    Use SourceContent model for structuring.
+  expected_output: 'List of contents organized by source.'
+  agent: file_reader_agent
+
+task_extract_fichas_tecnicas:
+  description: |
+    Extract complete technical sheets from EVERY SINGLE recipe found in all sources.
+    
+    **MANDATORY PROCESSING:**
+    - Process EVERY recipe from EVERY source (files and URLs)
+    - Do NOT skip any recipe, regardless of complexity or format
+    - Create one FichaTecnica for each recipe found
+    - Count recipes as you process: "Processing recipe 1 of X: [name]"
+    
+    **EXTRACTION per recipe:**
+    - Name, ingredients, quantities, preparation method, yield
+    - Search for realistic selling price via web search
+    
+    **CORRECTION FACTORS MANDATORY:**
+    - ALWAYS use fatores_rag tool first with ingredient name (ex: query "frango" to get FC=2.38)
+    - Extract exact factor number from RAG result (ex: "Frango | 2,38" → fator_correcao: 2.38)
+    - If ingredient not found in RAG, use web_search with query "fator correção [ingredient] perdas"
+    - Default to 1.0 ONLY if neither RAG nor web search returns a factor
+    - NEVER assume fator_correcao=1.0 without checking RAG first
+    
+    **STANDARDIZATION:**
+    - Units: MANDATORY "kg" or "L" (never grams/ml)
+    - "To taste" quantities: sal=0.005kg, temperos=0.002kg
+    - custo_unitario = 0.0 (filled in next task)
+    
+    **VALIDATION:**
+    - Ensure fichas_tecnicas list contains ALL recipes found
+    - Minimum 1 recipe must be processed, verify count matches input
+    
+    **OUTPUT FORMAT:**
+    Return ONLY a JSON array with this exact structure:
+    ```json
+    [
+      {
+        "nome_preparacao": "Recipe Name",
+        "rendimento_porcoes": 4,
+        "preco_venda": 25.0,
+        "ingredientes": [
+          {
+            "nome": "Ingredient Name",
+            "unidade": "kg",
+            "quantidade": 0.5,
+            "fator_correcao": 1.0,
+            "custo_unitario": 0.0
+          }
+        ]
+      }
+    ]
+    ```
+    
+    Use Ingrediente and FichaTecnica models.
+  expected_output: 'JSON array with ALL technical sheets with standardized ingredients and researched factors.'
+  agent: ficha_tecnica_agent
+  context:
+    - task_read_sources
+
+task_extract_base_insumos:
+  description: |
+    Consolidate unique ingredients into ingredient base with market prices.
+    
+    **CONSOLIDATION:**
+    - Unify similar ingredients ("ovo"/"ovos")
+    - Preserve correction factors from technical sheets
+    - Units: "kg" or "L" mandatory
+    - use ingrediente data from ALL recipes
+    
+    **PRICE RESEARCH MANDATORY:**
+    Execute MULTIPLE searches per ingredient until price found:
+    1. "preço [ingrediente] kg atacado teresina piauí 2024"
+    2. "cotação [ingrediente] kg mercado nordeste brasil"  
+    3. "[ingrediente] preço kg ceasa brasil 2024"
+    4. "[ingrediente] supermercado atacadista preço kg"
+    5. "preço médio [ingrediente] kg brasil 2024"
+    
+    **SEARCH REQUIREMENTS:**
+    - Must find REAL numeric prices in BRL (ex: R$ 8,50/kg)
+    - Try at least 3 different search queries per ingredient
+    - Extract prices from CEASA, supermarkets, suppliers websites
+    - Convert to number format (ex: "R$ 8,50" → 8.5)
+    
+    **SUPPLIERS:**
+    - Search: "fornecedores [ingrediente] teresina piauí" or "atacadistas [ingrediente] nordeste"
+    - Extract company name from search results
+    - If no specific supplier found, use "Fornecedor Local"
+    - NEVER use "0.0" price - keep searching until real price found
+    
+    **DATA:**
+    - Date: "{current_date}"
+    - Prices in BRL
+    
+    **OUTPUT FORMAT:**
+    Return ONLY a JSON array with this exact structure:
+    ```json
+    [
+      {
+        "ingrediente": "Ingredient Name",
+        "unidade": "kg",
+        "preco": 8.0,
+        "fator_correcao": 1.0,
+        "fornecedor": "Supplier Name",
+        "data_cotacao": "{current_date}"
+      }
+    ]
+    ```
+    
+    Use Insumo model.
+  expected_output: 'JSON array with ingredient base including prices, suppliers and quote date.'
+  agent: base_insumos_agent
+  context:
+    - task_extract_fichas_tecnicas
+
+task_consolidate_data:
+  description: |
+    Consolidate JSON data from previous agents and prepare final structure for Excel generation.
+    
+    **DATA CONSOLIDATION:**
+    - Receive JSON array of recipes from ficha_tecnica_agent
+    - Receive JSON array of ingredients from base_insumos_agent  
+    - Update custo_unitario in recipes using base_de_insumos prices
+    - Ensure data consistency between recipes and ingredient base
+    
+    **JSON STRUCTURE REQUIRED:**
+    Create JSON with this exact structure:
+    ```json
+    {
+      "fichas_tecnicas": [
+        {
+          "nome_preparacao": "Recipe Name",
+          "rendimento_porcoes": 4,
+          "preco_venda": 25.0,
+          "ingredientes": [
+            {
+              "nome": "Ingredient Name",
+              "unidade": "kg",
+              "quantidade": 0.5,
+              "fator_correcao": 1.0,
+              "custo_unitario": 8.0
+            }
+          ]
+        }
+      ],
+      "base_de_insumos": [
+        {
+          "ingrediente": "Ingredient Name",
+          "unidade": "kg",
+          "preco": 8.0,
+          "fator_correcao": 1.0,
+          "fornecedor": "Supplier Name", 
+          "data_cotacao": "{current_date}"
+        }
+      ]
+    }
+    ```
+    
+    **CRITICAL REQUIREMENTS:**
+    - Process ALL recipe and ingredient JSON data from previous tasks
+    - Update custo_unitario in recipes by matching ingredient names with base_de_insumos
+    - Ensure all numeric values are properly formatted
+    - Maintain data consistency between fichas_tecnicas and base_de_insumos
+  expected_output: 'Complete JSON object with all consolidated recipe and ingredient data ready for Excel generation.'
+  agent: data_consolidator_agent
+  context:
+    - task_extract_fichas_tecnicas
+    - task_extract_base_insumos
+
+task_generate_excel:
+  description: |
+    Generate Excel file using structured JSON data from consolidator agent.
+    
+    **GENERATION:**
+    - Receive JSON string from data consolidator agent
+    - Use excel_generator_tool with the JSON string
+    - Tool will create FICHA_TECNICA_COMPLETA_{current_date}.xlsx
+    - File saved to /Users/cairorocha/Documents/fichas_tecnicas1/output/
+    
+    **VALIDATION:**
+    - Verify JSON structure before generation
+    - Confirm all required fields are present
+    - Ensure data integrity throughout process
+  expected_output: 'Absolute path of Excel file with number of technical sheets and ingredients processed.'
+  agent: excel_writer_agent
+  context:
+    - task_consolidate_data

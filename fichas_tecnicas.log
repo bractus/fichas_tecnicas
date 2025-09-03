@@ -1,0 +1,151 @@
+2025-08-31 19:10:40,195 - INFO - Starting fichas técnicas generation process
+2025-08-31 19:10:40,195 - INFO - LLM models configured successfully
+2025-08-31 19:10:40,197 - ERROR - Error initializing tools: "MultiFormatFileReader" object has no field "max_file_size"
+2025-08-31 19:10:40,197 - ERROR - Error in fichas_tecnicas execution: "MultiFormatFileReader" object has no field "max_file_size"
+2025-08-31 19:10:40,197 - ERROR - Application failed: "MultiFormatFileReader" object has no field "max_file_size"
+2025-08-31 19:11:47,034 - INFO - Starting fichas técnicas generation process
+2025-08-31 19:11:47,035 - INFO - LLM models configured successfully
+2025-08-31 19:11:47,036 - ERROR - Error initializing tools: "WebScrapingTool" object has no field "app"
+2025-08-31 19:11:47,036 - ERROR - Error in fichas_tecnicas execution: "WebScrapingTool" object has no field "app"
+2025-08-31 19:11:47,036 - ERROR - Application failed: "WebScrapingTool" object has no field "app"
+2025-08-31 19:12:34,072 - INFO - Starting fichas técnicas generation process
+2025-08-31 19:12:34,072 - INFO - LLM models configured successfully
+2025-08-31 19:12:34,074 - INFO - Tools initialized successfully
+2025-08-31 19:12:34,077 - INFO - Configuration loaded: agents.yaml
+2025-08-31 19:12:34,080 - INFO - Configuration loaded: tasks.yaml
+2025-08-31 19:12:34,081 - INFO - Configuration loaded: sources.yaml
+2025-08-31 19:12:34,083 - INFO - Agents created successfully
+2025-08-31 19:12:34,084 - INFO - Tasks created successfully
+2025-08-31 19:12:34,096 - INFO - Crew assembled successfully
+2025-08-31 19:12:34,096 - INFO - Output directory ensured: /Users/cairorocha/Documents/fichas_tecnicas1/output
+2025-08-31 19:12:34,096 - INFO - Valid file found: ./input_examples/receita1.txt
+2025-08-31 19:12:34,097 - INFO - Valid file found: ./input_examples/receita2.docx
+2025-08-31 19:12:34,097 - INFO - Valid file found: ./input_examples/receita3.pdf
+2025-08-31 19:12:34,097 - INFO - Valid file found: ./input_examples/planilha_receitas.xlsx
+2025-08-31 19:12:34,097 - INFO - Valid URL added: https://tudogostoso.com.br/receita/123456-lasanha
+2025-08-31 19:12:34,097 - INFO - Starting processing of 5 sources
+2025-08-31 19:12:34,097 - INFO - Valid sources: ['./input_examples/receita1.txt', './input_examples/receita2.docx', './input_examples/receita3.pdf', './input_examples/planilha_receitas.xlsx', 'https://tudogostoso.com.br/receita/123456-lasanha']
+2025-08-31 19:12:35,557 - INFO - Langfuse client authenticated successfully
+2025-08-31 19:12:35,579 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:12:38,127 - INFO - Retrying LLM call without the unsupported 'stop'
+2025-08-31 19:12:38,128 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:12:43,659 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:12:43,675 - INFO - Reading file: ./input_examples/receita1.txt (type: .txt)
+2025-08-31 19:12:43,675 - INFO - Successfully read TXT file with utf-8 encoding
+2025-08-31 19:12:43,692 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:12:46,607 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:12:46,613 - INFO - Reading file: ./input_examples/receita2.docx (type: .docx)
+2025-08-31 19:12:46,626 - INFO - Successfully read DOCX file: 20 paragraphs
+2025-08-31 19:12:46,632 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:13:14,079 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:13:14,125 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:13:32,924 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:13:32,953 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:14:41,550 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:14:41,590 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:14:57,107 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:14:57,139 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:15:11,640 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:15:11,687 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:18:00,429 - INFO - Starting fichas técnicas generation process
+2025-08-31 19:18:00,429 - INFO - LLM models configured successfully
+2025-08-31 19:18:00,432 - INFO - Tools initialized successfully
+2025-08-31 19:18:00,434 - INFO - Configuration loaded: agents.yaml
+2025-08-31 19:18:00,438 - INFO - Configuration loaded: tasks.yaml
+2025-08-31 19:18:00,439 - INFO - Configuration loaded: sources.yaml
+2025-08-31 19:18:00,441 - INFO - Agents created successfully
+2025-08-31 19:18:00,442 - INFO - Tasks created successfully
+2025-08-31 19:18:00,450 - INFO - Crew assembled successfully
+2025-08-31 19:18:00,450 - INFO - Output directory ensured: /Users/cairorocha/Documents/fichas_tecnicas1/output
+2025-08-31 19:18:00,450 - INFO - Valid file found: ./input_examples/receita1.txt
+2025-08-31 19:18:00,451 - INFO - Valid file found: ./input_examples/receita2.docx
+2025-08-31 19:18:00,451 - INFO - Valid file found: ./input_examples/receita3.pdf
+2025-08-31 19:18:00,451 - INFO - Valid file found: ./input_examples/planilha_receitas.xlsx
+2025-08-31 19:18:00,452 - INFO - Valid URL added: https://tudogostoso.com.br/receita/123456-lasanha
+2025-08-31 19:18:00,452 - INFO - Starting processing of 5 sources
+2025-08-31 19:18:00,452 - INFO - Valid sources: ['./input_examples/receita1.txt', './input_examples/receita2.docx', './input_examples/receita3.pdf', './input_examples/planilha_receitas.xlsx', 'https://tudogostoso.com.br/receita/123456-lasanha']
+2025-08-31 19:18:01,431 - INFO - Langfuse client authenticated successfully
+2025-08-31 19:18:01,450 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:18:02,907 - INFO - Retrying LLM call without the unsupported 'stop'
+2025-08-31 19:18:02,908 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:18:07,689 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:18:07,704 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:18:17,624 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:18:17,639 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:18:29,824 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:18:29,839 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:18:45,610 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:18:45,627 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:18:57,953 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:18:57,972 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:19:14,547 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:19:14,561 - INFO - Executing Exa search for: 'solicitar dados fichas técnicas task_extract_fichas_tecnicas base_insumos task_extract_base_insumos'
+2025-08-31 19:19:17,422 - INFO - Successfully retrieved 5 results
+2025-08-31 19:19:17,432 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:19:28,310 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:19:28,330 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:19:37,428 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:19:37,449 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:19:44,278 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:19:44,281 - INFO - Starting Excel generation with ExcelGeneratorTool
+2025-08-31 19:19:44,284 - INFO - Processing 0 fichas and 0 insumos
+2025-08-31 19:19:44,289 - ERROR - Error creating Excel file: At least one sheet must be visible
+2025-08-31 19:19:44,293 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:20:14,915 - INFO - Starting fichas técnicas generation process
+2025-08-31 19:20:14,915 - INFO - LLM models configured successfully
+2025-08-31 19:20:14,917 - INFO - Tools initialized successfully
+2025-08-31 19:20:14,920 - INFO - Configuration loaded: agents.yaml
+2025-08-31 19:20:14,923 - INFO - Configuration loaded: tasks.yaml
+2025-08-31 19:20:14,924 - INFO - Configuration loaded: sources.yaml
+2025-08-31 19:20:14,928 - INFO - Agents created successfully
+2025-08-31 19:20:14,929 - INFO - Tasks created successfully
+2025-08-31 19:20:14,931 - INFO - Crew assembled successfully
+2025-08-31 19:20:14,932 - INFO - Output directory ensured: /Users/cairorocha/Documents/fichas_tecnicas1/output
+2025-08-31 19:20:14,932 - INFO - Valid file found: ./input_examples/receita1.txt
+2025-08-31 19:20:14,932 - INFO - Valid file found: ./input_examples/receita2.docx
+2025-08-31 19:20:14,932 - INFO - Valid file found: ./input_examples/receita3.pdf
+2025-08-31 19:20:14,933 - INFO - Valid file found: ./input_examples/planilha_receitas.xlsx
+2025-08-31 19:20:14,933 - INFO - Valid URL added: https://tudogostoso.com.br/receita/123456-lasanha
+2025-08-31 19:20:14,933 - INFO - Starting processing of 5 sources
+2025-08-31 19:20:14,933 - INFO - Valid sources: ['./input_examples/receita1.txt', './input_examples/receita2.docx', './input_examples/receita3.pdf', './input_examples/planilha_receitas.xlsx', 'https://tudogostoso.com.br/receita/123456-lasanha']
+2025-08-31 19:20:16,021 - INFO - Langfuse client authenticated successfully
+2025-08-31 19:20:16,042 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:20:16,881 - INFO - Retrying LLM call without the unsupported 'stop'
+2025-08-31 19:20:16,883 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:20:27,788 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:20:27,804 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:20:55,190 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:20:55,210 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:21:07,019 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:21:07,049 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:21:10,991 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:21:11,017 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai
+2025-08-31 19:21:28,543 - INFO - Wrapper: Completed Call, calling success_handler
+2025-08-31 19:21:28,577 - INFO - 
+LiteLLM completion() model= gpt-5-nano; provider = openai

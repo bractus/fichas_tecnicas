@@ -1,1 +1,0 @@
-# fichas_tecnicas
