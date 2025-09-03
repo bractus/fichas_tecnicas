@@ -28,23 +28,17 @@ def check_login():
     return st.session_state.authenticated
 
 def login_form():
-    """Exibe o formulário de login."""
-    st.markdown("""
-    <div style="display: flex; justify-content: center; align-items: center; height: 60vh;">
-        <div style="background-color: #f0f2f6; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); min-width: 400px;">
-            <h2 style="text-align: center; color: #1f77b4; margin-bottom: 2rem;">🔐 Login Administrativo</h2>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    """Exibe o formulário de login."""    
     # Criar container centralizado para o login
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
+        st.markdown("<br><br><br>", unsafe_allow_html=True)  # Espaçamento superior
+        
         with st.form("login_form"):
-            st.markdown("### Digite suas credenciais:")
-            username = st.text_input("👤 Usuário", placeholder="admin")
-            password = st.text_input("🔑 Senha", type="password", placeholder="admin")
+            st.markdown("### 🔐 Acesso ao Sistema")
+            username = st.text_input("👤 Usuário")
+            password = st.text_input("🔑 Senha", type="password")
             
             submit_button = st.form_submit_button("🚀 Entrar", type="primary", use_container_width=True)
             
@@ -55,10 +49,7 @@ def login_form():
                     time.sleep(1)
                     st.rerun()
                 else:
-                    st.error("❌ Credenciais inválidas. Use: admin/admin")
-        
-        st.markdown("---")
-        st.info("💡 **Credenciais padrão:** admin / admin")
+                    st.error("❌ Credenciais inválidas")
 
 def logout():
     """Faz logout do usuário."""
@@ -189,7 +180,7 @@ def main():
     # Sidebar com informações
     with st.sidebar:
         st.header("👤 Usuário Logado")
-        st.info("🔐 **admin** - Administrador")
+        st.info("🔐 **Usuário autenticado**")
         
         st.header("ℹ️ Informações")
         st.markdown("""
