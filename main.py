@@ -480,7 +480,7 @@ def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2
 
         # --- MONTAGEM DA CREW ---
         final_crew = Crew(
-            agents=[file_reader_agent, ficha_tecnica_agent, base_insumos_agent, data_consolidator_agent, excel_writer_agent],
+            agents=[file_reader_agent, ficha_tecnica_agent, base_insumos_agent, excel_writer_agent],
             tasks=[task_read_sources, task_extract_fichas_tecnicas, task_extract_base_insumos, task_consolidate_data, task_generate_excel],
             process=Process.hierarchical,
             manager_agent=data_consolidator_agent,
