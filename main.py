@@ -335,7 +335,8 @@ def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2
         llm = LLM(
             model='openai/gpt-4.1-nano',
             api_key=api_key,
-            temperature=0.0
+            temperature=0.0,
+            max_tokens=5000,
         )
         llm2 = LLM(
             model='gemini/gemini-2.5-flash',
@@ -346,7 +347,8 @@ def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2
         llm3 = LLM(
             model='openai/gpt-4o-mini',
             api_key=api_key,
-            temperature=0.0
+            temperature=0.0,
+            max_tokens=5000
         )
 
         logger.info("LLM models configured successfully")
