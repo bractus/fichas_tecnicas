@@ -47,6 +47,23 @@ def example_usage():
     print("   fichas_tecnicas([])  # Lista vazia - ValueError")
     print("   fichas_tecnicas(None)  # None - ValueError")
     
+    print("6. Exemplo de ficha técnica com modo de preparo:")
+    print("""
+    {
+        "nome_preparacao": "Lasanha à Bolonhesa",
+        "rendimento_porcoes": 6,
+        "preco_venda": 35.0,
+        "modo_preparo": [
+            "1. Refogue a cebola e alho no óleo até dourar",
+            "2. Adicione a carne moída e tempere com sal",
+            "3. Acrescente o molho de tomate e deixe cozinhar por 15 minutos",
+            "4. Monte a lasanha alternando massa, molho e queijo",
+            "5. Leve ao forno pré-aquecido a 180°C por 40 minutos"
+        ],
+        "ingredientes": [...]
+    }
+    """)
+    
     # Executar um exemplo real (descomente para testar)
     # result = fichas_tecnicas(sources_arquivos)
     # print(f"Resultado: {result}")

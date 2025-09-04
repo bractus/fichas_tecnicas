@@ -21,8 +21,14 @@ task_extract_fichas_tecnicas:
     - Count recipes as you process: "Processing recipe 1 of X: [name]"
     
     **EXTRACTION per recipe:**
-    - Name, ingredients, quantities, preparation method, yield
+    - Name, ingredients, quantities, preparation method (modo de preparo), yield
     - Search for realistic selling price via web search
+    
+    **MODO DE PREPARO MANDATORY:**
+    - Extract COMPLETE preparation steps from each recipe
+    - Convert to numbered list format (1. Step 1, 2. Step 2, etc.)
+    - Include cooking times, temperatures, and techniques
+    - If no preparation method found, use "Modo de preparo não especificado"
     
     **CORRECTION FACTORS MANDATORY:**
     - ALWAYS use fatores_rag tool first with ingredient name (ex: query "frango" to get FC=2.38)
@@ -48,6 +54,11 @@ task_extract_fichas_tecnicas:
         "nome_preparacao": "Recipe Name",
         "rendimento_porcoes": 4,
         "preco_venda": 25.0,
+        "modo_preparo": [
+          "1. Primeiro passo da preparação",
+          "2. Segundo passo da preparação",
+          "3. Terceiro passo da preparação"
+        ],
         "ingredientes": [
           {
             "nome": "Ingredient Name",
@@ -130,6 +141,7 @@ task_consolidate_data:
     - Receive JSON array of recipes from ficha_tecnica_agent
     - Receive JSON array of ingredients from base_insumos_agent  
     - Update custo_unitario in recipes using base_de_insumos prices
+    - Preserve modo_preparo from each recipe
     - Ensure data consistency between recipes and ingredient base
     
     **JSON STRUCTURE REQUIRED:**
@@ -141,6 +153,11 @@ task_consolidate_data:
           "nome_preparacao": "Recipe Name",
           "rendimento_porcoes": 4,
           "preco_venda": 25.0,
+          "modo_preparo": [
+            "1. Primeiro passo da preparação",
+            "2. Segundo passo da preparação",
+            "3. Terceiro passo da preparação"
+          ],
           "ingredientes": [
             {
               "nome": "Ingredient Name",
@@ -168,6 +185,7 @@ task_consolidate_data:
     **CRITICAL REQUIREMENTS:**
     - Process ALL recipe and ingredient JSON data from previous tasks
     - Update custo_unitario in recipes by matching ingredient names with base_de_insumos
+    - Preserve ALL fields from recipes including modo_preparo
     - Ensure all numeric values are properly formatted
     - Maintain data consistency between fichas_tecnicas and base_de_insumos
   expected_output: 'Complete JSON object with all consolidated recipe and ingredient data ready for Excel generation.'
