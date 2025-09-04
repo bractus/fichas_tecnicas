@@ -58,14 +58,59 @@ class MultiFormatFileReader(BaseTool):
     def _validate_file_path(self, file_path: str) -> bool:
         """Validate file path for security."""
         try:
+            # Check for empty or None path
+            if not file_path or not file_path.strip():
+                return False
+            
+            file_path = file_path.strip()
+            
             # Resolve to absolute path
             abs_path = os.path.abspath(file_path)
-            # Check for path traversal attempts
-            if '..' in file_path or abs_path.startswith(('/', '\\')):
-                if not abs_path.startswith(os.getcwd()):
+            original_cwd = os.getcwd()
+            
+            # Check for path traversal attempts that go outside safe directories
+            if '..' in file_path:
+                # Check if the resolved path tries to escape safe directories
+                normalized = os.path.normpath(abs_path)
+                
+                # If relative path with .. doesn't resolve within current directory, reject
+                if not os.path.isabs(file_path):
+                    if not normalized.startswith(original_cwd):
+                        return False
+                
+                # Additional check: if .. remains in normalized path, it's suspicious
+                if '..' in normalized:
                     return False
-            return True
-        except Exception:
+            
+            # Allow paths in system temp directories
+            import tempfile
+            temp_dir = tempfile.gettempdir()
+            
+            # Allow if:
+            # 1. Within current working directory
+            # 2. Within system temp directory
+            # 3. Within user's home directory (for uploaded files)
+            allowed_prefixes = [
+                original_cwd,
+                temp_dir,
+                os.path.expanduser('~'),
+                '/var/folders',  # macOS temp directories
+                '/tmp',          # Unix temp directories
+                'C:\\Users',     # Windows user directories
+                'C:\\Temp'       # Windows temp directories
+            ]
+            
+            for prefix in allowed_prefixes:
+                if abs_path.startswith(prefix):
+                    return True
+            
+            # If it's a relative path that resolves within current directory
+            if not os.path.isabs(file_path):
+                return abs_path.startswith(original_cwd)
+            
+            return False
+        except Exception as e:
+            logger.warning(f"Error validating file path {file_path}: {e}")
             return False
     
     def _check_file_size(self, file_path: str) -> bool:

@@ -5,7 +5,8 @@ import warnings
 import tracemalloc
 from datetime import datetime
 from typing import List, Optional
-#from dotenv import load_dotenv
+from dotenv import load_dotenv
+load_dotenv()
 
 # Enable tracemalloc for better resource tracking
 tracemalloc.start()
@@ -303,18 +304,28 @@ def safe_file_check(file_path: str) -> bool:
         logger.error(f"Error checking file {file_path}: {e}")
         return False
 
-def fichas_tecnicas(custom_sources=None):
+def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2'):
     """Gera fichas técnicas de receitas culinárias a partir de múltiplos arquivos/URLs.
     
     Args:
-        custom_sources (list, optional): Lista de fontes customizadas para processar.
-                                       Se None, usa sources.yaml padrão.
+        sources (list): Lista obrigatória de fontes para processar (arquivos ou URLs).
+                       Não aceita valores vazios.
+        color1 (str): Cor principal do Excel (formato hex sem #). Padrão: '4472C4'
+        color2 (str): Cor secundária do Excel (formato hex sem #). Padrão: 'D9E1F2'
+    
+    Raises:
+        ValueError: Se sources estiver vazio ou None.
     """
     try:
+        # Validar que sources não está vazio
+        if not sources or len(sources) == 0:
+            raise ValueError("O parâmetro 'sources' é obrigatório e não pode estar vazio")
+        
         # Carregar variáveis de ambiente
         #load_dotenv()
 
         logger.info("Starting fichas técnicas generation process")
+        logger.info(f"Received {len(sources)} sources to process")
 
         # --- Configuração do LLM ---
         api_key = os.getenv("OPENAI_API_KEY")
@@ -374,7 +385,6 @@ def fichas_tecnicas(custom_sources=None):
         # --- CARREGAR CONFIGURAÇÕES ---
         agents_config = load_config('agents.yaml')
         tasks_config = load_config('tasks.yaml')
-        sources_config = load_config('sources.yaml')
 
         # --- CRIAR AGENTES A PARTIR DOS CONFIGS ---
         try:
@@ -404,11 +414,20 @@ def fichas_tecnicas(custom_sources=None):
         filename = f"FICHA_TECNICA_COMPLETA_{timestamp}.xlsx"
         filepath = os.path.join(output_dir, filename)
 
+        # Validar fontes antes de criar as tarefas
+        sources_validas = validate_sources(sources)
+        
+        if not sources_validas:
+            logger.error("No valid sources found")
+            return
+        
         template_vars = {
             'current_date': current_date,
             'local': 'Teresina, Piauí, Brasil',
             'filepath': filepath,
-            'color': 'Blue'  # Cor personalizada para o Excel
+            'color': color1,  # Cor principal personalizada para o Excel
+            'color2': color2,  # Cor secundária personalizada para o Excel
+            'sources': sources_validas  # Adicionar sources às variáveis de template
         }
 
         # --- CRIAR TAREFAS A PARTIR DOS CONFIGS ---
@@ -443,25 +462,8 @@ def fichas_tecnicas(custom_sources=None):
         logger.info("Crew assembled successfully")
 
         # --- EXECUÇÃO ---
-        # Garantir que o diretório output existe
+        # Garantir que o diretório output existe (novamente para execução)
         output_dir = ensure_output_directory()
-        
-        # Usar fontes customizadas ou carregar da configuração
-        if custom_sources:
-            sources = custom_sources
-            logger.info(f"Using custom sources: {len(sources)} provided")
-        else:
-            sources = sources_config.get('sources', [])
-            if not sources:
-                logger.error("No sources found in configuration")
-                return
-        
-        # Validar fontes
-        sources_validas = validate_sources(sources)
-        
-        if not sources_validas:
-            logger.error("No valid sources found")
-            return
         
         inputs = {'sources': sources_validas}
         logger.info(f"Starting processing of {len(sources_validas)} sources")
@@ -514,12 +516,4 @@ def fichas_tecnicas(custom_sources=None):
         
     except Exception as e:
         logger.error(f"Error in fichas_tecnicas execution: {e}")
-        raise
-
-
-if __name__ == '__main__':
-    try:
-        fichas_tecnicas()
-    except Exception as e:
-        logger.error(f"Application failed: {e}")
         raise

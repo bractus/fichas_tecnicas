@@ -105,23 +105,66 @@ st.markdown("""
 
 def save_temp_file(uploaded_file):
     """Salva arquivo temporário e retorna o caminho."""
-    temp_dir = tempfile.mkdtemp()
-    temp_path = os.path.join(temp_dir, uploaded_file.name)
+    # Create a more secure temp file with proper naming
+    temp_dir = tempfile.mkdtemp(prefix="fichas_tecnicas_")
     
-    with open(temp_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+    # Sanitize filename
+    safe_filename = "".join(c for c in uploaded_file.name if c.isalnum() or c in (' ', '.', '_', '-')).rstrip()
+    if not safe_filename:
+        safe_filename = f"uploaded_file_{int(time.time())}"
     
-    return temp_path
+    temp_path = os.path.join(temp_dir, safe_filename)
+    
+    try:
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        
+        # Log the file creation for debugging
+        logger.info(f"Temporary file created: {temp_path}")
+        logger.info(f"File size: {os.path.getsize(temp_path)} bytes")
+        
+        return temp_path
+    except Exception as e:
+        logger.error(f"Error saving temporary file: {e}")
+        # Try to clean up on failure
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            os.rmdir(temp_dir)
+        except:
+            pass
+        raise e
 
 def save_text_as_temp_file(text_content, filename="receita_manual.txt"):
     """Salva texto como arquivo temporário."""
-    temp_dir = tempfile.mkdtemp()
-    temp_path = os.path.join(temp_dir, filename)
+    temp_dir = tempfile.mkdtemp(prefix="fichas_tecnicas_text_")
     
-    with open(temp_path, "w", encoding='utf-8') as f:
-        f.write(text_content)
+    # Sanitize filename
+    safe_filename = "".join(c for c in filename if c.isalnum() or c in (' ', '.', '_', '-')).rstrip()
+    if not safe_filename:
+        safe_filename = f"receita_manual_{int(time.time())}.txt"
     
-    return temp_path
+    temp_path = os.path.join(temp_dir, safe_filename)
+    
+    try:
+        with open(temp_path, "w", encoding='utf-8') as f:
+            f.write(text_content)
+        
+        # Log the file creation for debugging
+        logger.info(f"Temporary text file created: {temp_path}")
+        logger.info(f"File size: {len(text_content)} characters")
+        
+        return temp_path
+    except Exception as e:
+        logger.error(f"Error saving temporary text file: {e}")
+        # Try to clean up on failure
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            os.rmdir(temp_dir)
+        except:
+            pass
+        raise e
 
 def update_sources_config(sources_list):
     """Atualiza o arquivo sources.yaml com as novas fontes."""
@@ -135,11 +178,36 @@ def update_sources_config(sources_list):
     
     return config_path
 
-def process_recipes(sources_list):
+def cleanup_temp_files(sources_list):
+    """Limpa arquivos temporários após o processamento."""
+    for source in sources_list:
+        try:
+            if source and os.path.exists(source) and 'fichas_tecnicas' in source:
+                # Remove the file
+                os.remove(source)
+                # Try to remove the directory if it's empty
+                temp_dir = os.path.dirname(source)
+                try:
+                    os.rmdir(temp_dir)
+                except OSError:
+                    pass  # Directory not empty or other issue
+                logger.info(f"Cleaned up temporary file: {source}")
+        except Exception as e:
+            logger.warning(f"Could not clean up temporary file {source}: {e}")
+
+def process_recipes(sources_list, color1='4472C4', color2='D9E1F2'):
     """Processa receitas usando os agentes CrewAI."""
+    temp_files_created = []
     try:
-        # Executar processo principal com fontes customizadas
-        result = fichas_tecnicas(custom_sources=sources_list)
+        # Log the sources being processed
+        logger.info(f"Processing {len(sources_list)} sources:")
+        for i, source in enumerate(sources_list, 1):
+            logger.info(f"  {i}. {source}")
+            if '/tmp' in source or 'fichas_tecnicas' in source:
+                temp_files_created.append(source)
+        
+        # Executar processo principal com fontes e cores customizadas
+        result = fichas_tecnicas(sources=sources_list, color1=color1, color2=color2)
         
         # Verificar se o resultado é válido
         if isinstance(result, dict) and result.get('success'):
@@ -155,6 +223,10 @@ def process_recipes(sources_list):
     except Exception as e:
         logger.error(f"Erro no processamento: {str(e)}")
         return False, None, str(e)
+    finally:
+        # Clean up temporary files
+        if temp_files_created:
+            cleanup_temp_files(temp_files_created)
 
 def main():
     # Verificar autenticação
@@ -192,6 +264,101 @@ def main():
         - 📊 Geração de planilha Excel completa
         - 🧮 Cálculo de CMV (Custo da Mercadoria Vendida)
         """)
+        
+        st.header("🎨 Personalização do Excel")
+        st.markdown("**Escolha as cores do Excel:**")
+        
+        # Cores predefinidas
+        predefined_colors = {
+            "Azul (Padrão)": {"primary": "#4472C4", "secondary": "#D9E1F2"},
+            "Verde": {"primary": "#70AD47", "secondary": "#E2EFDA"},
+            "Vermelho": {"primary": "#C5504B", "secondary": "#F2DCDB"},
+            "Amarelo": {"primary": "#FFC000", "secondary": "#FFF2CC"},
+            "Roxo": {"primary": "#7030A0", "secondary": "#E4DFEC"},
+            "Laranja": {"primary": "#D26625", "secondary": "#FCE4D6"},
+            "Cinza": {"primary": "#595959", "secondary": "#D9D9D9"},
+            "Rosa": {"primary": "#E91E63", "secondary": "#FCE4EC"},
+            "Personalizado": None
+        }
+        
+        # Seletor de tema de cores
+        color_theme = st.selectbox(
+            "Escolha um tema de cores:",
+            list(predefined_colors.keys()),
+            help="Selecione um tema predefinido ou 'Personalizado' para definir suas próprias cores"
+        )
+        
+        # Se personalizado, mostrar color pickers
+        if color_theme == "Personalizado":
+            col_color1, col_color2 = st.columns(2)
+            with col_color1:
+                color1 = st.color_picker(
+                    "Cor Principal",
+                    value="#4472C4",
+                    help="Cor principal para cabeçalhos e destaque"
+                )
+            with col_color2:
+                color2 = st.color_picker(
+                    "Cor Secundária", 
+                    value="#D9E1F2",
+                    help="Cor secundária para fundos e bordas"
+                )
+            
+            # Opção de inserir hex manualmente
+            st.markdown("**Ou insira códigos hexadecimais:**")
+            col_hex1, col_hex2 = st.columns(2)
+            with col_hex1:
+                hex_input1 = st.text_input(
+                    "Hex Cor Principal",
+                    value=color1.lstrip('#'),
+                    max_chars=6,
+                    help="Digite o código hexadecimal sem # (ex: 4472C4)"
+                )
+                if len(hex_input1) == 6:
+                    try:
+                        int(hex_input1, 16)
+                        color1 = f"#{hex_input1}"
+                    except ValueError:
+                        st.warning("Código hex inválido para cor principal")
+            
+            with col_hex2:
+                hex_input2 = st.text_input(
+                    "Hex Cor Secundária",
+                    value=color2.lstrip('#'),
+                    max_chars=6,
+                    help="Digite o código hexadecimal sem # (ex: D9E1F2)"
+                )
+                if len(hex_input2) == 6:
+                    try:
+                        int(hex_input2, 16)
+                        color2 = f"#{hex_input2}"
+                    except ValueError:
+                        st.warning("Código hex inválido para cor secundária")
+        else:
+            # Usar cores predefinidas
+            color1 = predefined_colors[color_theme]["primary"]
+            color2 = predefined_colors[color_theme]["secondary"]
+        
+        # Preview das cores selecionadas
+        st.markdown(f"""
+        **Preview das cores - {color_theme}:**
+        <div style="display: flex; gap: 15px; margin: 15px 0; align-items: center;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <div style="width: 60px; height: 40px; background-color: {color1}; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 5px;"></div>
+                <small style="color: #666;">Principal</small>
+                <small style="color: #666; font-family: monospace;">{color1}</small>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <div style="width: 60px; height: 40px; background-color: {color2}; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 5px;"></div>
+                <small style="color: #666;">Secundária</small>
+                <small style="color: #666; font-family: monospace;">{color2}</small>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Armazenar cores no session_state
+        st.session_state.excel_color1 = color1.lstrip('#')
+        st.session_state.excel_color2 = color2.lstrip('#')
         
         st.header("🔧 Status do Sistema")
         if os.path.exists(".env"):
@@ -341,8 +508,10 @@ https://site.com/receita-bolo""",
                     status_text.text("📊 Gerando planilha Excel...")
                     progress_bar.progress(90)
                     
-                    # Processar receitas
-                    success, excel_file, result = process_recipes(sources_list)
+                    # Processar receitas com cores personalizadas
+                    colors1 = st.session_state.get('excel_color1', '4472C4')
+                    colors2 = st.session_state.get('excel_color2', 'D9E1F2')
+                    success, excel_file, result = process_recipes(sources_list, colors1, colors2)
                     
                     progress_bar.progress(100)
                 

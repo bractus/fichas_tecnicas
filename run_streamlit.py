@@ -10,7 +10,7 @@ def run_streamlit():
     """Executa a aplicação Streamlit."""
     try:
         # Mudar para o diretório do projeto
-        project_dir = "/Users/cairorocha/Documents/fichas_tecnicas1"
+        project_dir = "/Users/cairorocha/Documents/fichas_tecnicas"
         os.chdir(project_dir)
         
         print(f"📂 Executando a partir de: {project_dir}")
