@@ -20,16 +20,21 @@ WORKDIR /app
 # Copy Python packages from builder stage
 COPY --from=builder /root/.local /root/.local
 
+# Update PATH early
+ENV PATH=/root/.local/bin:$PATH
+
 # Create necessary directories
 RUN mkdir -p /app/output /app/files /app/config /app/tools /app/input_examples
 
 # Copy application code
 COPY . .
 
+# Verify crewai installation
+RUN python -c "import crewai; print('CrewAI successfully installed')"
+
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
-ENV PATH=/root/.local/bin:$PATH
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
