@@ -39,12 +39,9 @@ from openinference.instrumentation.litellm import LiteLLMInstrumentor
 
 
 import chromadb
-client = chromadb.Client(
-    chromadb.config.Settings(
-        chroma_db_impl="duckdb+parquet",
-        persist_directory=".chromadb"
-    )
-)
+
+# Use the new ChromaDB API
+client = chromadb.PersistentClient(path=".chromadb")
 
 # --- PYDANTIC MODELS ---
 class UnidadeMedida(str, Enum):
