@@ -141,22 +141,16 @@ def process_recipes(sources_list):
         # Executar processo principal com fontes customizadas
         result = fichas_tecnicas(custom_sources=sources_list)
         
-        # Encontrar arquivo Excel mais recente
-        output_dir = "/Users/cairorocha/Documents/fichas_tecnicas1/output"
-        
-        # Verificar se o diretório existe
-        if not os.path.exists(output_dir):
-            return False, None, "Diretório de output não encontrado."
-        
-        excel_files = [f for f in os.listdir(output_dir) if f.endswith('.xlsx')]
-        
-        if excel_files:
-            # Ordenar por data de modificação
-            excel_files.sort(key=lambda x: os.path.getmtime(os.path.join(output_dir, x)), reverse=True)
-            latest_file = os.path.join(output_dir, excel_files[0])
-            return True, latest_file, result
+        # Verificar se o resultado é válido
+        if isinstance(result, dict) and result.get('success'):
+            excel_file = result.get('excel_file')
+            if excel_file and os.path.exists(excel_file):
+                return True, excel_file, result.get('result')
+            else:
+                return False, None, "Arquivo Excel não foi encontrado."
         else:
-            return False, None, "Nenhum arquivo Excel foi gerado."
+            error_msg = result.get('result', "Erro desconhecido no processamento") if isinstance(result, dict) else str(result)
+            return False, None, error_msg
             
     except Exception as e:
         logger.error(f"Erro no processamento: {str(e)}")

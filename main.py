@@ -330,7 +330,7 @@ def fichas_tecnicas(custom_sources=None):
             raise ValueError("OPENAI_API_KEY not found in environment variables")
 
         llm = LLM(
-            model='gpt-5-nano',
+            model='gpt-4o-nano',
             api_key=api_key,
             temperature=0.0
         )
@@ -341,7 +341,7 @@ def fichas_tecnicas(custom_sources=None):
         )
 
         llm3 = LLM(
-            model='gpt-5-mini',
+            model='gpt-4o-mini',
             api_key=api_key,
             temperature=0.0
         )
@@ -446,7 +446,7 @@ def fichas_tecnicas(custom_sources=None):
             tasks=[task_read_sources, task_extract_fichas_tecnicas, task_extract_base_insumos, task_consolidate_data, task_generate_excel],
             process=Process.sequential,
             memory=False,
-            verbose=True
+            verbose=False
         )
         logger.info("Crew assembled successfully")
 
@@ -513,11 +513,12 @@ def fichas_tecnicas(custom_sources=None):
         
         if valid_files:
             logger.info(f"Process completed successfully with {len(valid_files)} valid Excel file(s)")
+            # Retornar o arquivo Excel mais recente
+            latest_file = max(valid_files, key=os.path.getmtime)
+            return {'success': True, 'excel_file': latest_file, 'result': result}
         else:
             logger.warning("No valid Excel files found in output directory")
-        
-        logger.info(f"Check files in directory: {output_dir}")
-        return result
+            return {'success': False, 'excel_file': None, 'result': "No valid Excel files generated"}
         
     except Exception as e:
         logger.error(f"Error in fichas_tecnicas execution: {e}")
