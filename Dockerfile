@@ -29,9 +29,6 @@ RUN mkdir -p /app/output /app/files /app/config /app/tools /app/input_examples
 # Copy application code
 COPY . .
 
-# Verify crewai installation
-RUN python -c "import crewai; print('CrewAI successfully installed')"
-
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
