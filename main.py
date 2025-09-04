@@ -330,7 +330,7 @@ def fichas_tecnicas(custom_sources=None):
             raise ValueError("OPENAI_API_KEY not found in environment variables")
 
         llm = LLM(
-            model='gpt-4o-nano',
+            model='openai/gpt-4o-nano',
             api_key=api_key,
             temperature=0.0
         )
@@ -341,7 +341,7 @@ def fichas_tecnicas(custom_sources=None):
         )
 
         llm3 = LLM(
-            model='gpt-4o-mini',
+            model='openai/gpt-4o-mini',
             api_key=api_key,
             temperature=0.0
         )
