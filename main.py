@@ -179,19 +179,11 @@ def ensure_output_directory() -> str:
     current_working_dir = os.getcwd()
     logger.info(f"Current working directory: {current_working_dir}")
     
-    # Use hardcoded project path to ensure correct location
-    project_root = "/Users/cairorocha/Documents/fichas_tecnicas1"
+    # Use current working directory (works on Railway and local)
+    project_root = current_working_dir
+    output_dir = os.path.join(project_root, "output")
     
-    # Verify the project directory exists
-    if os.path.exists(project_root):
-        output_dir = os.path.join(project_root, "output")
-        logger.info(f"Using hardcoded project root: {project_root}")
-    else:
-        # Fallback to calculated path if hardcoded doesn't exist
-        project_root = os.path.dirname(os.path.abspath(__file__))
-        output_dir = os.path.join(project_root, "output")
-        logger.info(f"Fallback to calculated project root: {project_root}")
-    
+    logger.info(f"Using project root: {project_root}")
     logger.info(f"Output directory ensured: {output_dir}")
     os.makedirs(output_dir, exist_ok=True)
     return output_dir
@@ -407,7 +399,7 @@ def fichas_tecnicas(custom_sources=None):
         # --- DEFINIR VARIÁVEIS PARA OS TEMPLATES ---
         current_date = datetime.now().strftime('%d/%m/%Y')
 
-        output_dir = "/Users/cairorocha/Documents/fichas_tecnicas1/output"
+        output_dir = ensure_output_directory()
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"FICHA_TECNICA_COMPLETA_{timestamp}.xlsx"
         filepath = os.path.join(output_dir, filename)

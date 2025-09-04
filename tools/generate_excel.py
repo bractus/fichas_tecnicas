@@ -28,23 +28,13 @@ class ExcelGeneratorTool(BaseTool):
             current_working_dir = os.getcwd()
             logger.info(f"Current working directory in ExcelGeneratorTool: {current_working_dir}")
             
-            # Force use of the correct project directory
-            # Use hardcoded absolute path to ensure correct location
-            project_root = "/Users/cairorocha/Documents/fichas_tecnicas1"
+            # Use dynamic project directory (works on Railway and local)
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             output_dir = os.path.join(project_root, "output")
             
             logger.info(f"Current working directory: {current_working_dir}")
-            logger.info(f"Forced project root directory: {project_root}")
+            logger.info(f"Project root directory: {project_root}")
             logger.info(f"Using output directory: {output_dir}")
-            
-            # Verify the project directory exists
-            if not os.path.exists(project_root):
-                logger.error(f"Project root directory does not exist: {project_root}")
-                # Fallback to current working directory approach
-                project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                output_dir = os.path.join(project_root, "output")
-                logger.info(f"Fallback to calculated project root: {project_root}")
-                logger.info(f"Fallback output directory: {output_dir}")
             
             # Ensure output directory exists
             os.makedirs(output_dir, exist_ok=True)
@@ -305,8 +295,6 @@ class ExcelGeneratorTool(BaseTool):
             # Generate unique filename to prevent conflicts
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"FICHA_TECNICA_COMPLETA_{timestamp}.xlsx"
-            output_dir = "/Users/cairorocha/Documents/fichas_tecnicas1/output"
-
             filepath = os.path.join(output_dir, filename)
             
             # Save workbook with error handling
@@ -317,23 +305,6 @@ class ExcelGeneratorTool(BaseTool):
                 # Verify file was created and is valid
                 if self._verify_excel_file(filepath):
                     logger.info(f"Excel file created and verified successfully: {filepath}")
-                    
-                    # Double-check: ensure file is in correct project directory
-                    expected_output_dir = "/Users/cairorocha/Documents/fichas_tecnicas1/output"
-                    if not filepath.startswith(expected_output_dir):
-                        logger.warning(f"File created in wrong location: {filepath}")
-                        # Try to copy to correct location
-                        try:
-                            os.makedirs(expected_output_dir, exist_ok=True)
-                            correct_filepath = os.path.join(expected_output_dir, os.path.basename(filepath))
-                            import shutil
-                            shutil.copy2(filepath, correct_filepath)
-                            logger.info(f"File copied to correct location: {correct_filepath}")
-                            # Remove the file from wrong location
-                            os.remove(filepath)
-                            filepath = correct_filepath
-                        except Exception as copy_error:
-                            logger.error(f"Failed to copy file to correct location: {copy_error}")
                     
                     return f"✅ SUCESSO: Arquivo Excel criado: {filepath} com {len(fichas)} receitas e {len(insumos)} insumos."
                 else:
