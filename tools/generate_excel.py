@@ -20,7 +20,7 @@ class ExcelGeneratorTool(BaseTool):
     description: str = "Creates Excel file with one sheet per technical sheet and ONE unified ingredient base sheet. Provide data as JSON string."
     args_schema: Type[BaseModel] = ExcelGeneratorInput
 
-    def _run(self, data_json: str, color='4472C4') -> str:
+    def _run(self, data_json: str, color='4472C4', color2='D9E1F2') -> str:
         """Cria um arquivo Excel profissional a partir de dados JSON"""
         filepath = None
         try:
