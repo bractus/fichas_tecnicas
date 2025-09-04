@@ -56,5 +56,5 @@ EXPOSE $PORT
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
-# Default command - Railway will use this
-CMD ["python", "main.py"]
+# Default command - Run Streamlit app
+CMD streamlit run streamlit_app.py --server.port=${PORT:-8000} --server.address=0.0.0.0
