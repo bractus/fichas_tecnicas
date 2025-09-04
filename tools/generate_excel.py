@@ -70,13 +70,19 @@ class ExcelGeneratorTool(BaseTool):
             
             logger.info(f"Processing {len(fichas)} fichas and {len(insumos)} insumos")
             
-            # Debug: Log detailed information about the data received
+            # Debug: Log detailed information about the data received including modo_preparo
             if fichas:
                 logger.info("=== FICHAS TÉCNICAS RECEBIDAS ===")
                 for i, ficha in enumerate(fichas, 1):
                     nome = ficha.get('nome_preparacao', 'NOME NÃO ENCONTRADO')
                     ingredientes_count = len(ficha.get('ingredientes', []))
-                    logger.info(f"Ficha {i}: {nome} - {ingredientes_count} ingredientes")
+                    modo_preparo = ficha.get('modo_preparo', [])
+                    modo_preparo_status = f"{len(modo_preparo)} passos" if modo_preparo else "AUSENTE"
+                    logger.info(f"Ficha {i}: {nome} - {ingredientes_count} ingredientes - Modo de Preparo: {modo_preparo_status}")
+                    if modo_preparo:
+                        logger.info(f"  Passos de preparo: {modo_preparo[:3]}{'...' if len(modo_preparo) > 3 else ''}")
+                    else:
+                        logger.warning(f"  ⚠️  MODO DE PREPARO AUSENTE para: {nome}")
             else:
                 logger.warning("NENHUMA FICHA TÉCNICA ENCONTRADA NO JSON!")
                 
@@ -238,18 +244,35 @@ class ExcelGeneratorTool(BaseTool):
 
                         linha_seguinte = linha_adicionais + 5
 
-                # E. Seção Modo de Preparo
+                # E. Seção Modo de Preparo (SEMPRE INCLUÍDA)
+                modo_preparo = ficha.get("modo_preparo", [])
+                logger.info(f"Processing modo_preparo for {ficha.get('nome_preparacao', 'Unknown')}: {len(modo_preparo) if modo_preparo else 0} steps")
+                
+                # SEMPRE adicionar seção de modo de preparo
+                linha_preparo = linha_seguinte + 2
+                cell_titulo_preparo = sheet.cell(row=linha_preparo, column=1, value="MODO DE PREPARO")
+                cell_titulo_preparo.font = font_subtitulo
+                sheet.merge_cells(f'A{linha_preparo}:G{linha_preparo}')
+                
                 if "modo_preparo" in ficha and ficha["modo_preparo"]:
-                    linha_preparo = linha_seguinte + 2
-                    cell_titulo_preparo = sheet.cell(row=linha_preparo, column=1, value="MODO DE PREPARO")
-                    cell_titulo_preparo.font = font_subtitulo
-                    sheet.merge_cells(f'A{linha_preparo}:G{linha_preparo}')
-                    
+                    # Modo de preparo encontrado - adicionar passos
+                    logger.info(f"Adding MODO DE PREPARO section with {len(ficha['modo_preparo'])} steps")
                     for i, passo in enumerate(ficha["modo_preparo"], 1):
-                        passo_cell = sheet.cell(row=linha_preparo + i, column=1, value=f"{i}. {passo}")
+                        logger.info(f"Adding step {i}: {passo[:50]}{'...' if len(passo) > 50 else ''}")
+                        passo_cell = sheet.cell(row=linha_preparo + i, column=1, value=f"{passo}")
                         passo_cell.alignment = Alignment(wrap_text=True, vertical='top')
                         sheet.merge_cells(f'A{linha_preparo + i}:G{linha_preparo + i}')
                         sheet.row_dimensions[linha_preparo + i].height = 30
+                        linha_seguinte = linha_preparo + i
+                else:
+                    # Modo de preparo vazio - adicionar mensagem padrão
+                    logger.warning(f"⚠️  modo_preparo is empty for: {ficha.get('nome_preparacao', 'Unknown')} - adding default message")
+                    passo_cell = sheet.cell(row=linha_preparo + 1, column=1, value="Modo de preparo não especificado")
+                    passo_cell.alignment = Alignment(wrap_text=True, vertical='top', horizontal='center')
+                    passo_cell.font = Font(italic=True, color="666666")
+                    sheet.merge_cells(f'A{linha_preparo + 1}:G{linha_preparo + 1}')
+                    sheet.row_dimensions[linha_preparo + 1].height = 25
+                    linha_seguinte = linha_preparo + 1
 
                 # F. Ajuste da Largura das Colunas
                 sheet.column_dimensions['A'].width = 30  # Ingredientes

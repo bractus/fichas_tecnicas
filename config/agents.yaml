@@ -29,6 +29,7 @@ data_consolidator_agent:
   goal: 'Consolidate JSON arrays from previous agents into final structured JSON object'
   backstory: 'Data processing specialist who consolidates JSON data from multiple agents into the final structure required for Excel generation. Expert in merging recipe and ingredient JSON arrays and updating pricing information.'
   verbose: true
+  allow_delegation: true
   tools: []
 
 excel_writer_agent:

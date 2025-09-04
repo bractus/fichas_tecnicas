@@ -4,11 +4,13 @@ O sistema agora extrai e processa **completa e automaticamente** o modo de prepa
 
 ## 🔧 **Funcionalidade Implementada**
 
-### ✅ **Extração Automática**
-- **Detecção inteligente**: O sistema localiza automaticamente a seção de modo de preparo nas receitas
+### ✅ **Extração Obrigatória com Busca Web**
+- **OBRIGATÓRIO**: Cada receita DEVE ter campo modo_preparo processado
+- **Detecção inteligente**: Localiza automaticamente a seção de modo de preparo nas receitas
+- **Busca web como fallback**: Se não encontrado na fonte, busca na web por "receita [nome] modo preparo"
 - **Formatação padronizada**: Converte para lista numerada (1. Passo 1, 2. Passo 2, etc.)
 - **Preservação de detalhes**: Mantém tempos, temperaturas e técnicas culinárias
-- **Fallback**: Se não encontrar, usa "Modo de preparo não especificado"
+- **Vazio se necessário**: Campo pode ficar vazio [] apenas se não encontrado em lugar nenhum
 
 ### 📊 **Estrutura de Dados**
 ```json
@@ -50,34 +52,60 @@ O sistema agora extrai e processa **completa e automaticamente** o modo de prepa
 ## 🔄 **Fluxo de Processamento**
 
 1. **Leitura**: Sistema lê arquivos/URLs com receitas
-2. **Extração**: IA identifica seção de modo de preparo
-3. **Formatação**: Converte para lista numerada padronizada
-4. **Validação**: Verifica se está completo e coerente
-5. **Consolidação**: Integra com ingredientes e preços
-6. **Excel**: Gera planilha com seção dedicada ao modo de preparo
+2. **Extração Primária**: IA identifica seção de modo de preparo na fonte
+3. **Busca Web (se necessário)**: Se não encontrado, busca na web:
+   - "receita [nome] modo preparo passo a passo"
+   - "[nome] receita como fazer"
+4. **Formatação**: Converte para lista numerada padronizada
+5. **Validação**: Verifica se está completo e coerente
+6. **Consolidação**: Integra com ingredientes e preços
+7. **Excel**: Gera planilha com seção dedicada ao modo de preparo
 
-## 📖 **Exemplos de Entrada**
+### 🔍 **Prioridade de Busca**
+1. **🏅 PRIMÁRIO**: Conteúdo da fonte original (arquivo/URL)
+2. **🔎 FALLBACK**: Busca web automática para receitas incompletas
+3. **📝 FINAL**: Lista vazia [] se nenhuma fonte disponível
 
-### Texto Livre
+## 📖 **Exemplos de Processamento**
+
+### ✅ Caso 1: Encontrado na Fonte
+**Entrada no arquivo:**
 ```
 MODO DE PREPARO:
 Refogue a cebola no óleo.
 Adicione a carne e tempere.
 Acrescente o molho de tomate.
 ```
+**Resultado:** Extração direta da fonte
 
-### Lista Já Numerada
+### ✅ Caso 2: Lista Já Numerada
+**Entrada no arquivo:**
 ```
 PREPARO:
 1. Aqueça o óleo em uma panela
 2. Doure a cebola por 3 minutos
 3. Junte a carne moída
 ```
+**Resultado:** Mantém numeração existente
 
-### Formato de Parágrafo
+### 🔍 Caso 3: Não Encontrado na Fonte → Busca Web
+**Entrada no arquivo:**
 ```
-Para preparar: primeiro refogue a cebola e alho, depois adicione a carne moída e tempere, por fim acrescente o molho de tomate e cozinhe por 15 minutos.
+LASANHA À BOLONHESA
+Ingredientes: massa, carne, queijo...
+(sem modo de preparo)
 ```
+**Ação:** Sistema busca automaticamente "receita lasanha bolonhesa modo preparo"
+**Resultado:** Extrai modo de preparo dos resultados da web
+
+### ⚠️ Caso 4: Não Encontrado em Lugar Nenhum
+**Entrada no arquivo:**
+```
+RECEITA OBSCURA
+Ingredientes: ingrediente1, ingrediente2...
+```
+**Ação:** Busca web não retorna resultados úteis
+**Resultado:** `"modo_preparo": []`
 
 ## 📊 **Saída Padronizada**
 

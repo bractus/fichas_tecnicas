@@ -20,15 +20,31 @@ task_extract_fichas_tecnicas:
     - Create one FichaTecnica for each recipe found
     - Count recipes as you process: "Processing recipe 1 of X: [name]"
     
+    **PROCESSING WORKFLOW PER RECIPE:**
+    1. Extract name, ingredients, quantities, yield from source
+    2. Search for modo_preparo in source content
+    3. If modo_preparo not found in source → web search for recipe preparation
+    4. If web search fails → set modo_preparo as empty list []
+    5. Search for realistic selling price, according to the cost of ingredients.
+    6. Get correction factors using fatores_rag tool
+    
     **EXTRACTION per recipe:**
     - Name, ingredients, quantities, preparation method (modo de preparo), yield
-    - Search for realistic selling price via web search
+    - Search for realistic selling price via web search and proportional to the cost of ingredients, at least 3 times the cost
     
-    **MODO DE PREPARO MANDATORY:**
-    - Extract COMPLETE preparation steps from each recipe
-    - Convert to numbered list format (1. Step 1, 2. Step 2, etc.)
-    - Include cooking times, temperatures, and techniques
-    - If no preparation method found, use "Modo de preparo não especificado"
+    **CRITICAL: MODO DE PREPARO EXTRACTION MANDATORY:** 
+    - EVERY recipe MUST have modo_preparo field populated
+    - Extract preparation steps in this exact order:
+      1. FIRST: Look for preparation steps in source content (lines with "modo", "preparo", "como fazer", numbered steps, cooking instructions)
+      2. SECOND: If not found in source, ALWAYS use web_search with query "receita [nome_preparacao] modo preparo"
+      3. THIRD: If web search returns nothing, use web_search with query "[nome_preparacao] como fazer passo a passo"
+      4. LAST RESORT: If all searches fail, modo_preparo = ["1. Preparar conforme instruções padrão da receita"]
+    
+    **MODO DE PREPARO FORMATTING:**
+    - Convert ALL steps to numbered list: ["1. Primeiro passo", "2. Segundo passo", etc.]
+    - Include cooking times, temperatures when available
+    - Each step should be a complete sentence
+    - NEVER leave modo_preparo as empty list [] - always provide at least one step
     
     **CORRECTION FACTORS MANDATORY:**
     - ALWAYS use fatores_rag tool first with ingredient name (ex: query "frango" to get FC=2.38)
@@ -45,6 +61,9 @@ task_extract_fichas_tecnicas:
     **VALIDATION:**
     - Ensure fichas_tecnicas list contains ALL recipes found
     - Minimum 1 recipe must be processed, verify count matches input
+    - EVERY recipe MUST have modo_preparo field with AT LEAST 1 step (NEVER empty list [])
+    - Log modo_preparo extraction method: source, web_search, or default
+    - Before returning JSON, verify each recipe has populated modo_preparo
     
     **OUTPUT FORMAT:**
     Return ONLY a JSON array with this exact structure:
@@ -55,7 +74,7 @@ task_extract_fichas_tecnicas:
         "rendimento_porcoes": 4,
         "preco_venda": 25.0,
         "modo_preparo": [
-          "1. Primeiro passo da preparação",
+          "1. Primeiro passo da preparação (OBRIGATÓRIO - nunca vazio)",
           "2. Segundo passo da preparação",
           "3. Terceiro passo da preparação"
         ],
@@ -73,7 +92,7 @@ task_extract_fichas_tecnicas:
     ```
     
     Use Ingrediente and FichaTecnica models.
-  expected_output: 'JSON array with ALL technical sheets with standardized ingredients and researched factors.'
+  expected_output: 'JSON array with ALL technical sheets with standardized ingredients, researched factors, and complete modo_preparo (extracted from source, web search, or empty if not found).'
   agent: ficha_tecnica_agent
   context:
     - task_read_sources
@@ -185,9 +204,11 @@ task_consolidate_data:
     **CRITICAL REQUIREMENTS:**
     - Process ALL recipe and ingredient JSON data from previous tasks
     - Update custo_unitario in recipes by matching ingredient names with base_de_insumos
-    - Preserve ALL fields from recipes including modo_preparo
+    - Preserve ALL fields from recipes including modo_preparo (MANDATORY - must have at least 1 step)
     - Ensure all numeric values are properly formatted
     - Maintain data consistency between fichas_tecnicas and base_de_insumos
+    - VERIFY every recipe has populated modo_preparo field (never empty [])
+    - If any recipe has empty modo_preparo, add default step: ["1. Preparar conforme instruções da receita"]
   expected_output: 'Complete JSON object with all consolidated recipe and ingredient data ready for Excel generation.'
   agent: data_consolidator_agent
   context:

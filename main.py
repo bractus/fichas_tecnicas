@@ -159,14 +159,39 @@ def validate_recipe_data(json_data: str) -> RecipeData:
             logger.info(f"Fichas técnicas encontradas: {fichas_count}")
             logger.info(f"Insumos encontrados: {insumos_count}")
             
-            # Log individual recipe names for debugging
+            # Log individual recipe names and modo_preparo for debugging
             if 'fichas_tecnicas' in data_dict:
                 for i, ficha in enumerate(data_dict['fichas_tecnicas'], 1):
                     nome = ficha.get('nome_preparacao', 'NOME AUSENTE') if isinstance(ficha, dict) else 'FORMATO INVÁLIDO'
-                    logger.info(f"Ficha {i} na validação: {nome}")
+                    modo_preparo = ficha.get('modo_preparo', []) if isinstance(ficha, dict) else []
+                    modo_preparo_status = f"{len(modo_preparo)} passos" if modo_preparo else "VAZIO/AUSENTE"
+                    logger.info(f"Ficha {i} na validação: {nome} - Modo de Preparo: {modo_preparo_status}")
+                    if modo_preparo:
+                        logger.info(f"  ✅ Passos encontrados: {modo_preparo}")
+                    else:
+                        logger.error(f"  ❌ MODO DE PREPARO AUSENTE para receita: {nome}")
+                        logger.error(f"     Campos da ficha: {list(ficha.keys()) if isinstance(ficha, dict) else 'N/A'}")
+        
+        # Additional validation: ensure every recipe has modo_preparo populated
+        if 'fichas_tecnicas' in data_dict:
+            for i, ficha in enumerate(data_dict['fichas_tecnicas']):
+                if isinstance(ficha, dict):
+                    modo_preparo = ficha.get('modo_preparo', [])
+                    if not modo_preparo or len(modo_preparo) == 0:
+                        default_step = "1. Preparar conforme instruções padrão da receita"
+                        ficha['modo_preparo'] = [default_step]
+                        logger.warning(f"⚠️  FIXED: Added default modo_preparo to recipe {i+1}: {ficha.get('nome_preparacao', 'Unknown')}")
         
         result = RecipeData(**data_dict)
         logger.info(f"✅ Validação bem-sucedida: {len(result.fichas_tecnicas)} fichas, {len(result.base_de_insumos)} insumos")
+        
+        # Final validation log for modo_preparo
+        for i, ficha in enumerate(result.fichas_tecnicas, 1):
+            if ficha.modo_preparo:
+                logger.info(f"✅ Recipe {i} ({ficha.nome_preparacao}) has {len(ficha.modo_preparo)} preparation steps")
+            else:
+                logger.error(f"❌ Recipe {i} ({ficha.nome_preparacao}) STILL has empty modo_preparo after validation!")
+        
         return result
         
     except Exception as e:
@@ -457,7 +482,8 @@ def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2
         final_crew = Crew(
             agents=[file_reader_agent, ficha_tecnica_agent, base_insumos_agent, data_consolidator_agent, excel_writer_agent],
             tasks=[task_read_sources, task_extract_fichas_tecnicas, task_extract_base_insumos, task_consolidate_data, task_generate_excel],
-            process=Process.sequential,
+            process=Process.hierarchical,
+            manager_agent=data_consolidator_agent,
             memory=False,
             verbose=False
         )
