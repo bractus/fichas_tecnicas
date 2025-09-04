@@ -5,7 +5,7 @@ import warnings
 import tracemalloc
 from datetime import datetime
 from typing import List, Optional
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 # Enable tracemalloc for better resource tracking
 tracemalloc.start()
@@ -323,7 +323,8 @@ def fichas_tecnicas(custom_sources=None):
     """
     try:
         # Carregar variáveis de ambiente
-        load_dotenv()
+        #load_dotenv()
+
         logger.info("Starting fichas técnicas generation process")
 
         # --- Configuração do LLM ---

@@ -3,7 +3,7 @@ from crewai.tools import BaseTool
 from firecrawl import FirecrawlApp
 import os
 import logging
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,8 @@ class WebScrapingTool(BaseTool):
     def _run(self, url: str) -> str:
         try:
             # Load environment variables and initialize FirecrawlApp
-            load_dotenv()
+            #load_dotenv()
+
             api_key = os.getenv('FIRECRAWL_API_KEY')
             
             if not api_key:

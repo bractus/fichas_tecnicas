@@ -2,7 +2,7 @@ from crewai.tools import BaseTool
 from exa_py import Exa
 import os
 import logging
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 from pathlib import Path
 from pydantic import Field
 from typing import Type, Optional
