@@ -1,11 +1,18 @@
 # Multi-stage build for Railway optimization
 FROM python:3.11-slim as builder
 
+# Create user early in builder stage
+RUN useradd -m -u 1000 appuser
+
 # Install system dependencies for building
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
+
+# Switch to appuser and install dependencies in user space
+USER appuser
+WORKDIR /home/appuser
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
@@ -14,14 +21,17 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # Final stage
 FROM python:3.11-slim
 
+# Create user in final stage
+RUN useradd -m -u 1000 appuser
+
 # Set working directory
 WORKDIR /app
 
-# Copy Python packages from builder stage
-COPY --from=builder /root/.local /root/.local
+# Copy Python packages from builder stage to appuser home
+COPY --from=builder /home/appuser/.local /home/appuser/.local
 
-# Update PATH early
-ENV PATH=/root/.local/bin:$PATH
+# Update PATH for appuser packages
+ENV PATH=/home/appuser/.local/bin:$PATH
 
 # Create necessary directories
 RUN mkdir -p /app/output /app/files /app/config /app/tools /app/input_examples
@@ -33,9 +43,10 @@ COPY . .
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+# Change ownership to appuser
+RUN chown -R appuser:appuser /app
+
+# Switch to appuser
 USER appuser
 
 # Expose port for Railway (Railway automatically assigns PORT env var)
