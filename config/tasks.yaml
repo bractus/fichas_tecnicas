@@ -1,95 +1,237 @@
 task_read_sources:
   description: |
     Extract complete content from all sources in {sources}.
-    - Local files: use multi_reader_tool
-    - URLs: use web_scraping_tool
-    - Keep source identification
+    
+    - Local files: Use multi_reader_tool
+    - URLs: Use web_scraping_tool
+    - Maintain source identification
+    
     Use SourceContent model for structuring.
-  expected_output: "List of contents organized by source."
+  expected_output: 'List of contents organized by source.'
   agent: file_reader_agent
 
 task_extract_fichas_tecnicas:
   description: |
-    Extract technical sheets for EVERY recipe from all sources.
-
-    **Rules:**
-    - Process ALL recipes (files + URLs), no skipping
-    - Use only provided sources (never invent or search recipes online)
-    - Log progress: "Processing recipe 1 of X: [name]"
-
-    **Per Recipe:**
-    - Extract: name, ingredients, quantities, yield
-    - modo_preparo:
-      1. Prefer source content ("modo", "preparo", "como fazer", steps, instructions)
-      2. If missing, generate generic steps from ingredients
-      3. If still missing, default: ["1. Prepare as per standard instructions"]
-    - Format as numbered list, include times/temps when available
-    - Never leave modo_preparo empty
-    - Calculate selling price ≥ 3x cost
-    - Use fatores_rag for correction factors, fallback to web_search, default 1.0 only if nothing found
-    - Units must be "kg" or "L"
-    - Standard "to taste": salt=0.005kg, spices=0.002kg
-    - Set custo_unitario=0.0 (to be updated later)
-
-    **Validation:**
-    - Ensure ALL recipes have modo_preparo with ≥ 1 step
-    - Count matches number of recipes in sources
-    - Verify JSON before returning
-
-    **Output:**
-    JSON array of FichaTecnica objects with standardized fields and factors.
-  expected_output: "JSON array with ALL technical sheets, standardized and complete."
+    Extract complete technical sheets from EVERY SINGLE recipe found in all sources.
+    
+    **MANDATORY PROCESSING:**
+    - Process EVERY recipe from EVERY source (files and URLs)
+    - Do NOT skip any recipe, regardless of complexity or format
+    - Create one FichaTecnica for each recipe found ONLY from provided sources
+    - DO NOT invent, create, or add recipes not explicitly found in the provided sources
+    - DO NOT search for or generate recipes from the internet
+    - Count recipes as you process: "Processing recipe 1 of X: [name]"
+    
+    **PROCESSING WORKFLOW PER RECIPE:**
+    1. Extract ONLY name, ingredients, quantities, yield from provided source content
+    2. Search for modo_preparo ONLY in source content
+    3. If modo_preparo not found in source → use generic preparation steps based on ingredient list
+    4. Never web search for complete recipes - only use provided source content
+    5. Calculate viable selling price based on ingredient costs (minimum 3x cost)
+    6. Get correction factors using fatores_rag tool
+    
+    **EXTRACTION per recipe:**
+    - ONLY extract data found in the provided sources
+    - Name, ingredients, quantities, preparation method (modo de preparo), yield
+    - Calculate realistic selling price (will be calculated after cost consolidation)
+    
+    **CRITICAL: MODO DE PREPARO EXTRACTION MANDATORY:** 
+    - EVERY recipe MUST have modo_preparo field populated
+    - Extract preparation steps ONLY from provided sources:
+      1. FIRST: Look for preparation steps in source content (lines with "modo", "preparo", "como fazer", numbered steps, cooking instructions)
+      2. SECOND: If not found in source, create generic preparation steps based on ingredients and cooking method
+      3. LAST RESORT: If no preparation info available, modo_preparo = ["1. Preparar conforme instruções padrão da receita"]
+    - DO NOT use web search to find preparation methods - only use provided source content
+    
+    **MODO DE PREPARO FORMATTING:**
+    - Convert ALL steps to numbered list: ["1. Primeiro passo", "2. Segundo passo", etc.]
+    - Include cooking times, temperatures when available
+    - Each step should be a complete sentence
+    - NEVER leave modo_preparo as empty list [] - always provide at least one step
+    
+    **CORRECTION FACTORS MANDATORY:**
+    - ALWAYS use fatores_rag tool first with ingredient name (ex: query "frango" to get FC=2.38)
+    - Extract exact factor number from RAG result (ex: "Frango | 2,38" → fator_correcao: 2.38)
+    - If ingredient not found in RAG, use web_search ONLY for correction factors with query "fator correção [ingredient] perdas"
+    - Default to 1.0 ONLY if neither RAG nor web search returns a factor
+    - NEVER assume fator_correcao=1.0 without checking RAG first
+    - IMPORTANT: web_search should ONLY be used for correction factors, NEVER for complete recipes
+    
+    **STANDARDIZATION:**
+    - Units: MANDATORY "kg" or "L" (never grams/ml)
+    - "To taste" quantities: sal=0.005kg, temperos=0.002kg
+    - custo_unitario = 0.0 (filled in next task)
+    
+    **VALIDATION:**
+    - Ensure fichas_tecnicas list contains ALL recipes found
+    - Minimum 1 recipe must be processed, verify count matches input
+    - EVERY recipe MUST have modo_preparo field with AT LEAST 1 step (NEVER empty list [])
+    - Log modo_preparo extraction method: source, web_search, or default
+    - Before returning JSON, verify each recipe has populated modo_preparo
+    
+    **OUTPUT FORMAT:**
+    Return ONLY a JSON array with this exact structure:
+    ```json
+    [
+      {
+        "nome_preparacao": "Recipe Name",
+        "rendimento_porcoes": 4,
+        "preco_venda": 25.0,
+        "modo_preparo": [
+          "1. Primeiro passo da preparação (OBRIGATÓRIO - nunca vazio)",
+          "2. Segundo passo da preparação",
+          "3. Terceiro passo da preparação"
+        ],
+        "ingredientes": [
+          {
+            "nome": "Ingredient Name",
+            "unidade": "kg",
+            "quantidade": 0.5,
+            "fator_correcao": 1.0,
+            "custo_unitario": 0.0
+          }
+        ]
+      }
+    ]
+    ```
+    
+    Use Ingrediente and FichaTecnica models.
+  expected_output: 'JSON array with ALL technical sheets with standardized ingredients, researched factors, and complete modo_preparo (extracted from source, web search, or empty if not found).'
   agent: ficha_tecnica_agent
   context:
     - task_read_sources
 
 task_extract_base_insumos:
   description: |
-    Build ingredient base with market prices.
-
-    **Consolidation:**
-    - Unify similar names ("ovo"/"ovos")
-    - One entry per normalized ingredient
-    - Preserve correction factors
-    - Units: "kg" or "L"
-
-    **Price Research:**
-    - Perform multiple searches until REAL numeric BRL price found
-    - Queries: CEASA, wholesale, supermarket, suppliers
-    - Convert "R$ 8,50" → 8.5
-    - Extract supplier names (fallback: "Fornecedor Local")
-    - Never use 0.0 price
-    - Add {current_date}
-
-    **Output:**
-    JSON array of Insumo objects with ingredient, unit, price, factor, supplier, date.
-  expected_output: "JSON array with ingredients, prices, suppliers, and date."
+    Consolidate unique ingredients into ingredient base with market prices.
+    
+    **CONSOLIDATION:**
+    - Unify similar ingredients ("ovo"/"ovos", "cebola"/"cebolas", etc.)
+    - Use EXACT ingredient names from recipes for price lookup
+    - Create one entry per unique ingredient name (normalize similar names)
+    - Preserve correction factors from technical sheets
+    - Units: "kg" or "L" MANDATORY (never grams/ml)
+    - Use ingrediente data from ALL recipes
+    
+    **PRICE RESEARCH MANDATORY:**
+    Execute MULTIPLE searches per ingredient until price found:
+    1. "preço [ingrediente] kg atacado teresina piauí 2024"
+    2. "cotação [ingrediente] kg mercado nordeste brasil"  
+    3. "[ingrediente] preço kg ceasa brasil 2024"
+    4. "[ingrediente] supermercado atacadista preço kg"
+    5. "preço médio [ingrediente] kg brasil 2024"
+    
+    **SEARCH REQUIREMENTS:**
+    - Must find REAL numeric prices in BRL (ex: R$ 8,50/kg)
+    - Try at least 3 different search queries per ingredient
+    - Extract prices from CEASA, supermarkets, suppliers websites
+    - Convert to number format (ex: "R$ 8,50" → 8.5)
+    
+    **SUPPLIERS:**
+    - Search: "fornecedores [ingrediente] teresina piauí" or "atacadistas [ingrediente] nordeste"
+    - Extract company name from search results
+    - If no specific supplier found, use "Fornecedor Local"
+    - NEVER use "0.0" price - keep searching until real price found
+    
+    **DATA:**
+    - Date: "{current_date}"
+    - Prices in BRL
+    
+    **OUTPUT FORMAT:**
+    Return ONLY a JSON array with this exact structure:
+    ```json
+    [
+      {
+        "ingrediente": "Ingredient Name",
+        "unidade": "kg",
+        "preco": 8.0,
+        "fator_correcao": 1.0,
+        "fornecedor": "Supplier Name",
+        "data_cotacao": "{current_date}"
+      }
+    ]
+    ```
+    
+    Use Insumo model.
+  expected_output: 'JSON array with ingredient base including prices, suppliers and quote date.'
   agent: base_insumos_agent
   context:
     - task_extract_fichas_tecnicas
 
 task_consolidate_data:
   description: |
-    Merge recipes and ingredient data into final JSON for Excel.
-
-    **Process:**
-    - Match recipe ingredients with base_de_insumos by name
-    - Update custo_unitario from base_de_insumos
-    - Calculate recipe total cost and selling price:
-      - total = Σ (quantidade * fator_correcao * custo_unitario)
-      - selling price = (total * 3.5) / yield, rounded to nearest 0.50
-      - must be ≥ 3x cost
-    - Remove duplicates, preserve modo_preparo
-    - Ensure no custo_unitario=0.0
-    - If modo_preparo empty, default step provided
-
-    **Output:**
-    Final JSON:
+    Consolidate JSON data from previous agents and prepare final structure for Excel generation.
+    
+    **DATA CONSOLIDATION:**
+    - Receive JSON array of recipes from ficha_tecnica_agent
+    - Receive JSON array of ingredients from base_insumos_agent  
+    - Update custo_unitario in recipes using base_de_insumos prices
+    - Preserve modo_preparo from each recipe
+    - Ensure data consistency between recipes and ingredient base
+    
+    **JSON STRUCTURE REQUIRED:**
+    Create JSON with this exact structure:
+    ```json
     {
-      "fichas_tecnicas": [...],
-      "base_de_insumos": [...]
+      "fichas_tecnicas": [
+        {
+          "nome_preparacao": "Recipe Name",
+          "rendimento_porcoes": 4,
+          "preco_venda": 25.0,
+          "modo_preparo": [
+            "1. Primeiro passo da preparação",
+            "2. Segundo passo da preparação",
+            "3. Terceiro passo da preparação"
+          ],
+          "ingredientes": [
+            {
+              "nome": "Ingredient Name",
+              "unidade": "kg",
+              "quantidade": 0.5,
+              "fator_correcao": 1.0,
+              "custo_unitario": 8.0
+            }
+          ]
+        }
+      ],
+      "base_de_insumos": [
+        {
+          "ingrediente": "Ingredient Name",
+          "unidade": "kg",
+          "preco": 8.0,
+          "fator_correcao": 1.0,
+          "fornecedor": "Supplier Name", 
+          "data_cotacao": "{current_date}"
+        }
+      ]
     }
-  expected_output: "Complete JSON object with consolidated recipes and ingredients."
+    ```
+    
+    **CRITICAL REQUIREMENTS:**
+    - Process ALL recipe and ingredient JSON data from previous tasks
+    - MANDATORY PRICE UPDATE AND CALCULATION ALGORITHM:
+      1. For each recipe in fichas_tecnicas array
+      2. For each ingredient in recipe.ingredientes array  
+      3. Find matching ingredient in base_de_insumos by exact name match
+      4. Copy preco from base_de_insumos to ingredient.custo_unitario
+      5. Example: if base_de_insumos has {"ingrediente": "arroz", "preco": 4.0}
+         then recipe ingredient {"nome": "arroz"} gets custo_unitario: 4.0
+      6. CALCULATE TOTAL RECIPE COST:
+         - For each ingredient: (quantidade * fator_correcao * custo_unitario)
+         - Sum all ingredient costs = total_cost_per_recipe
+      7. CALCULATE SELLING PRICE:
+         - selling_price_per_portion = (total_cost_per_recipe * 3.5) / rendimento_porcoes
+         - Minimum markup: 3x cost, recommended: 3.5x cost
+         - Round to nearest 0.50 (ex: 12.30 becomes 12.50)
+      8. UPDATE preco_venda field with calculated selling price
+    - NEVER leave custo_unitario as 0.0 - always update with real prices from base_de_insumos
+    - Remove duplicate recipes - each recipe should appear only once in final JSON
+    - Preserve ALL fields from recipes including modo_preparo (MANDATORY - must have at least 1 step)
+    - Ensure all numeric values are properly formatted
+    - Maintain data consistency between fichas_tecnicas and base_de_insumos
+    - VERIFY every recipe has populated modo_preparo field (never empty [])
+    - If any recipe has empty modo_preparo, add default step: ["1. Preparar conforme instruções da receita"]
+  expected_output: 'Complete JSON object with all consolidated recipe and ingredient data ready for Excel generation.'
   agent: data_consolidator_agent
   context:
     - task_extract_fichas_tecnicas
@@ -97,18 +239,25 @@ task_consolidate_data:
 
 task_generate_excel:
   description: |
-    Generate Excel file from consolidated JSON.
-
-    **Process:**
-    - Validate JSON before generation
-    - Call excel_generator_tool with:
-      * data_json: full JSON
-      * color: "{color}"
-      * color2: "{color2}"
-    - Save file as FICHA_TECNICA_COMPLETA_{current_date}.xlsx in current folder
-    - Ensure custom colors applied (not default blue)
-
-  expected_output: "Absolute path of Excel file with number of recipes and ingredients."
+    Generate Excel file using structured JSON data from consolidator agent.
+    
+    **GENERATION:**
+    - Receive JSON string from data consolidator agent
+    - MANDATORY: Call excel_generator_tool with exactly these parameters:
+      * data_json: the complete JSON string from consolidator
+      * color: use exactly this value '{color}' 
+      * color2: use exactly this value '{color2}'
+    - DO NOT use default colors - MUST use the specified color values above
+    - Colors will be applied to Excel headers and table styling
+    - Tool will create FICHA_TECNICA_COMPLETA_{current_date}.xlsx with custom colors
+    - File saved to /Users/cairorocha/Documents/fichas_tecnicas/output/
+    
+    **VALIDATION:**
+    - Verify JSON structure before generation
+    - Confirm all required fields are present
+    - Ensure data integrity throughout process
+    - Verify colors are applied (not default blue colors)
+  expected_output: 'Absolute path of Excel file with number of technical sheets and ingredients processed.'
   agent: excel_writer_agent
   context:
     - task_consolidate_data
