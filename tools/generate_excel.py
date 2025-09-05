@@ -22,6 +22,57 @@ class ExcelGeneratorTool(BaseTool):
     description: str = "Creates Excel file with one sheet per technical sheet and ONE unified ingredient base sheet. Provide data as JSON string."
     args_schema: Type[BaseModel] = ExcelGeneratorInput
 
+    def _calculate_viable_price(self, ficha: dict, insumos_dict: dict) -> None:
+        """Calcula preço de venda viável baseado no custo dos ingredientes (mínimo 3x)"""
+        import math
+        
+        nome_receita = ficha.get('nome_preparacao', 'Receita')
+        rendimento = ficha.get('rendimento_porcoes', 1)
+        
+        total_cost = 0.0
+        
+        # Calcular custo total da receita
+        for ingrediente in ficha.get('ingredientes', []):
+            nome = ingrediente.get('nome', '').lower()
+            quantidade = ingrediente.get('quantidade', 0)
+            fator_correcao = ingrediente.get('fator_correcao', 1.0)
+            
+            # Buscar preço no dicionário de insumos e atualizar custo_unitario
+            if nome in insumos_dict:
+                preco_unitario = insumos_dict[nome].get('preco', 0.0)
+                ingrediente['custo_unitario'] = preco_unitario
+                
+                # Calcular custo do ingrediente
+                quantidade_corrigida = quantidade * fator_correcao
+                custo_ingrediente = quantidade_corrigida * preco_unitario
+                total_cost += custo_ingrediente
+        
+        # Calcular preço de venda
+        if total_cost > 0 and rendimento > 0:
+            custo_por_porcao = total_cost / rendimento
+            
+            # Aplicar markup de 3.5x (mínimo 3x)
+            preco_base = custo_por_porcao * 3.5
+            
+            # Arredondar para o próximo 0.50
+            preco_venda = math.ceil(preco_base * 2) / 2
+            
+            # Garantir mínimo de 3x
+            preco_minimo = custo_por_porcao * 3
+            if preco_venda < preco_minimo:
+                preco_venda = math.ceil(preco_minimo * 2) / 2
+            
+            # Atualizar preço de venda na ficha
+            ficha['preco_venda'] = preco_venda
+            
+            markup = (preco_venda / custo_por_porcao) if custo_por_porcao > 0 else 0
+            logger.info(f"💰 {nome_receita}: Custo R$ {total_cost:.2f} → Preço R$ {preco_venda:.2f}/porção (markup {markup:.1f}x)")
+        else:
+            # Se não conseguir calcular, usar preço padrão
+            if ficha.get('preco_venda', 0) <= 0:
+                ficha['preco_venda'] = 15.0
+            logger.warning(f"⚠️  {nome_receita}: Não foi possível calcular preço, usando padrão R$ {ficha['preco_venda']:.2f}")
+
     def _run(self, data_json: str, color: str = '4472C4', color2: str = 'D9E1F2') -> str:
         """Cria um arquivo Excel profissional a partir de dados JSON"""
         filepath = None
@@ -71,6 +122,16 @@ class ExcelGeneratorTool(BaseTool):
             insumos = data.get('base_de_insumos', [])
             
             logger.info(f"Processing {len(fichas)} fichas and {len(insumos)} insumos")
+            
+            # Create insumos lookup dictionary for price calculation
+            insumos_dict = {}
+            for insumo in insumos:
+                nome_key = insumo.get('ingrediente', '').lower()
+                insumos_dict[nome_key] = insumo
+            
+            # Calculate viable selling prices for each recipe
+            for ficha in fichas:
+                self._calculate_viable_price(ficha, insumos_dict)
             
             # Debug: Log detailed information about the data received including modo_preparo
             if fichas:
