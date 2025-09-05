@@ -14,13 +14,15 @@ logger = logging.getLogger(__name__)
 
 class ExcelGeneratorInput(BaseModel):
     data_json: str = Field(..., description="JSON data containing fichas_tecnicas and base_de_insumos to generate Excel file")
+    color: str = Field(default='4472C4', description="Primary color for Excel headers (hexadecimal without #)")
+    color2: str = Field(default='D9E1F2', description="Secondary color for Excel tables (hexadecimal without #)")
 
 class ExcelGeneratorTool(BaseTool):
     name: str = "Gerador de Planilha de Ficha Técnica e Base de Insumos"
     description: str = "Creates Excel file with one sheet per technical sheet and ONE unified ingredient base sheet. Provide data as JSON string."
     args_schema: Type[BaseModel] = ExcelGeneratorInput
 
-    def _run(self, data_json: str, color='4472C4', color2='D9E1F2') -> str:
+    def _run(self, data_json: str, color: str = '4472C4', color2: str = 'D9E1F2') -> str:
         """Cria um arquivo Excel profissional a partir de dados JSON"""
         filepath = None
         try:
@@ -256,10 +258,27 @@ class ExcelGeneratorTool(BaseTool):
                 
                 if "modo_preparo" in ficha and ficha["modo_preparo"]:
                     # Modo de preparo encontrado - adicionar passos
-                    logger.info(f"Adding MODO DE PREPARO section with {len(ficha['modo_preparo'])} steps")
-                    for i, passo in enumerate(ficha["modo_preparo"], 1):
-                        logger.info(f"Adding step {i}: {passo[:50]}{'...' if len(passo) > 50 else ''}")
-                        passo_cell = sheet.cell(row=linha_preparo + i, column=1, value=f"{passo}")
+                    modo_preparo_data = ficha["modo_preparo"]
+                    logger.info(f"MODO DE PREPARO DEBUG: type={type(modo_preparo_data)}, value={modo_preparo_data}")
+                    
+                    # Verificar se é string ao invés de lista
+                    if isinstance(modo_preparo_data, str):
+                        logger.warning("modo_preparo is string, converting to list")
+                        # Se for string, tenta quebrar por \n ou por numeração
+                        if '\n' in modo_preparo_data:
+                            steps = [step.strip() for step in modo_preparo_data.split('\n') if step.strip()]
+                        else:
+                            steps = [modo_preparo_data]  # Uma única string
+                    elif isinstance(modo_preparo_data, list):
+                        steps = modo_preparo_data
+                    else:
+                        logger.error(f"Unknown modo_preparo format: {type(modo_preparo_data)}")
+                        steps = ["Modo de preparo inválido"]
+                    
+                    logger.info(f"Adding MODO DE PREPARO section with {len(steps)} steps")
+                    for i, passo in enumerate(steps, 1):
+                        logger.info(f"Adding step {i}: {passo[:50]}{'...' if len(str(passo)) > 50 else ''}")
+                        passo_cell = sheet.cell(row=linha_preparo + i, column=1, value=str(passo))
                         passo_cell.alignment = Alignment(wrap_text=True, vertical='top')
                         sheet.merge_cells(f'A{linha_preparo + i}:G{linha_preparo + i}')
                         sheet.row_dimensions[linha_preparo + i].height = 30
@@ -284,7 +303,11 @@ class ExcelGeneratorTool(BaseTool):
                 sheet.column_dimensions['G'].width = 15  # Custo Total
             
             # --- PARTE 2: Gerar UMA ÚNICA aba "Base de Insumos Unificada" ---
+            logger.info(f"BASE DE INSUMOS DEBUG: Found {len(insumos)} insumos")
             if insumos:
+                logger.info("Creating Base de Insumos sheet")
+                for i, insumo in enumerate(insumos[:3], 1):  # Log first 3
+                    logger.info(f"Insumo {i}: {insumo}")
                 sheet_base = workbook.create_sheet(title="Base de Insumos")
                 
                 # Cabeçalho
@@ -314,6 +337,25 @@ class ExcelGeneratorTool(BaseTool):
                     
                     for col in range(1, 7):
                         sheet_base.cell(row=row, column=col).border = border_thin
+            else:
+                logger.warning("No insumos data found - creating empty Base de Insumos sheet")
+                sheet_base = workbook.create_sheet(title="Base de Insumos")
+                
+                # Cabeçalho
+                headers_base = ["INGREDIENTE", "UNIDADE", "PREÇO UNITÁRIO", "FATOR CORREÇÃO", "FORNECEDOR", "DATA DE COTAÇÃO"]
+                widths = [30, 12, 15, 15, 25, 18]
+                
+                for col, (header, width) in enumerate(zip(headers_base, widths), 1):
+                    cell = sheet_base.cell(row=1, column=col, value=header)
+                    cell.font = font_bold
+                    cell.fill = fill_header_tabela
+                    cell.border = border_thin
+                    sheet_base.column_dimensions[get_column_letter(col)].width = width
+                
+                # Mensagem informativa
+                no_data_cell = sheet_base.cell(row=2, column=1, value="Nenhum insumo gerado - verifique o processamento")
+                no_data_cell.font = Font(italic=True, color="999999")
+                sheet_base.merge_cells('A2:F2')
             
             # Generate unique filename to prevent conflicts
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

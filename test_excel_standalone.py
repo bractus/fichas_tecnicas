@@ -44,9 +44,9 @@ def test_excel_generation_standalone():
                     }
                 ],
                 "modo_preparo": [
-                    "Misture os ingredientes secos",
-                    "Adicione os líquidos gradualmente",
-                    "Asse em forno pré-aquecido a 180°C por 40 minutos"
+                    "1. Misture os ingredientes secos",
+                    "2. Adicione os líquidos gradualmente",
+                    "3. Asse em forno pré-aquecido a 180°C por 40 minutos"
                 ]
             }
         ],
@@ -89,13 +89,17 @@ def test_excel_generation_standalone():
         fichas = test_data.get('fichas_tecnicas', [])
         insumos = test_data.get('base_de_insumos', [])
         
+        # Testar com cores personalizadas
+        color1 = '70AD47'  # Verde
+        color2 = 'E2EFDA'  # Verde claro
+        
         # Estilos
         font_titulo = Font(name='Arial', size=14, bold=True, color='FFFFFF')
-        fill_titulo = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+        fill_titulo = PatternFill(start_color=color1, end_color=color1, fill_type='solid')
         align_center = Alignment(horizontal='center', vertical='center')
         font_subtitulo = Font(name='Arial', size=11, bold=True)
         font_bold = Font(name='Arial', size=10, bold=True)
-        fill_header_tabela = PatternFill(start_color='D9E1F2', end_color='D9E1F2', fill_type='solid')
+        fill_header_tabela = PatternFill(start_color=color2, end_color=color2, fill_type='solid')
         border_thin = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
         
         # Criar aba para ficha técnica
