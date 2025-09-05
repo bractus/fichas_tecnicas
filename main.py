@@ -348,7 +348,7 @@ def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2
         )
 
         llm2 = LLM(
-            model="openai-gpt-4o-mini",
+            model="openai/gpt-4o-mini",
             api_key=os.getenv("OPENAI_API_KEY"),
             temperature=0.0
         )
