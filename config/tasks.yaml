@@ -110,7 +110,7 @@ task_extract_base_insumos:
     - Use EXACT ingredient names from recipes for price lookup
     - Create one entry per unique ingredient name (normalize similar names)
     - Preserve correction factors from technical sheets
-    - Units: "kg" or "L" mandatory
+    - Units: Use JUST "kg" or "L" MANDATORY
     - Use ingrediente data from ALL recipes
     
     **PRICE RESEARCH MANDATORY:**
