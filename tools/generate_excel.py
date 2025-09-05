@@ -194,19 +194,36 @@ class ExcelGeneratorTool(BaseTool):
                 sheet['B3'] = ficha.get("nome_preparacao", "").upper()
                 sheet['B3'].font = font_subtitulo
                 
-                sheet['A4'] = "DEPARTAMENTO:"
+                # Adicionar rendimento e preço de venda
+                rendimento = ficha.get("rendimento_porcoes", "N/A")
+                preco_venda = ficha.get("preco_venda", 0.0)
+                
+                sheet['A4'] = "RENDIMENTO:"
                 sheet['A4'].font = font_bold
-                sheet['B4'] = "COZINHA"
+                sheet['B4'] = f"{rendimento} porções"
+                sheet['B4'].font = font_bold
+                
+                sheet['D4'] = "PREÇO DE VENDA:"
+                sheet['D4'].font = font_bold
+                sheet.merge_cells('E4:G4')
+                price_cell = sheet['E4']
+                price_cell.value = preco_venda
+                price_cell.font = font_bold
+                price_cell.number_format = '"R$ "#,##0.00" por porção"'
+                
+                sheet['A5'] = "DEPARTAMENTO:"
+                sheet['A5'].font = font_bold
+                sheet['B5'] = "COZINHA"
 
                 # B. Tabela de Ingredientes
                 headers_tabela = ["INGREDIENTES", "UNIDADE", "QUANTIDADE", "FATOR CORREÇÃO", "PESO CORRIGIDO", "CUSTO UNITÁRIO", "CUSTO TOTAL"]
                 for col_num, header_text in enumerate(headers_tabela, 1):
-                    cell = sheet.cell(row=7, column=col_num, value=header_text)
+                    cell = sheet.cell(row=8, column=col_num, value=header_text)
                     cell.font = font_bold
                     cell.fill = fill_header_tabela
                     cell.border = border_thin
                 
-                linha_atual = 8
+                linha_atual = 9
                 for ingrediente in ficha.get("ingredientes", []):
                     # Handle both list and dict formats
                     if isinstance(ingrediente, list) and len(ingrediente) >= 5:

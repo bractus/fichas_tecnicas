@@ -357,12 +357,6 @@ def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2
             raise ValueError("OPENAI_API_KEY not found in environment variables")
 
         llm1 = LLM(
-            model="openrouter/google/gemini-2.5-flash-lite",
-            base_url="https://openrouter.ai/api/v1",
-            api_key=os.getenv("OPENROUTER_API_KEY"),
-            temperature=0.0
-        )
-        llm2 = LLM(
             model="openrouter/google/gemini-2.5-flash",
             base_url="https://openrouter.ai/api/v1",
             api_key=os.getenv("OPENROUTER_API_KEY"),
@@ -409,9 +403,9 @@ def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2
         # --- CRIAR AGENTES A PARTIR DOS CONFIGS ---
         try:
             file_reader_agent = create_agent_from_config('file_reader_agent', agents_config['file_reader_agent'], tools_dict, llm1)
-            ficha_tecnica_agent = create_agent_from_config('ficha_tecnica_agent', agents_config['ficha_tecnica_agent'], tools_dict, llm2)
-            base_insumos_agent = create_agent_from_config('base_insumos_agent', agents_config['base_insumos_agent'], tools_dict, llm2)
-            data_consolidator_agent = create_agent_from_config('data_consolidator_agent', agents_config['data_consolidator_agent'], tools_dict, llm2)
+            ficha_tecnica_agent = create_agent_from_config('ficha_tecnica_agent', agents_config['ficha_tecnica_agent'], tools_dict, llm1)
+            base_insumos_agent = create_agent_from_config('base_insumos_agent', agents_config['base_insumos_agent'], tools_dict, llm1)
+            data_consolidator_agent = create_agent_from_config('data_consolidator_agent', agents_config['data_consolidator_agent'], tools_dict, llm1)
             excel_writer_agent = create_agent_from_config('excel_writer_agent', agents_config['excel_writer_agent'], tools_dict, llm1)
             logger.info("Agents created successfully")
         except Exception as e:
@@ -473,10 +467,10 @@ def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2
 
         # --- MONTAGEM DA CREW ---
         final_crew = Crew(
-            agents=[file_reader_agent, ficha_tecnica_agent, base_insumos_agent, excel_writer_agent],
+            agents=[file_reader_agent, ficha_tecnica_agent, base_insumos_agent,data_consolidator_agent, excel_writer_agent],
             tasks=[task_read_sources, task_extract_fichas_tecnicas, task_extract_base_insumos, task_consolidate_data, task_generate_excel],
-            process=Process.hierarchical,
-            manager_agent=data_consolidator_agent,
+            process=Process.sequential,
+            # manager_agent=data_consolidator_agent,
             memory=False,
             verbose=False
         )
