@@ -2,14 +2,10 @@ import os
 import json
 import logging
 import warnings
-import tracemalloc
 from datetime import datetime
 from typing import List, Optional
 from dotenv import load_dotenv
 load_dotenv()
-
-# Enable tracemalloc for better resource tracking
-tracemalloc.start()
 
 # Suppress specific warnings
 warnings.filterwarnings("ignore", message="Field name \"json\" in \"ChangeTrackingData\" shadows an attribute in parent \"BaseModel\"")
@@ -19,29 +15,21 @@ warnings.filterwarnings("ignore", message="unclosed.*ssl.SSLSocket.*")
 warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*ssl.SSLSocket.*")
 from crewai import Agent, Task, Crew, Process
 from crewai import LLM
-import pandas as pd
-from docx import Document
-import PyPDF2
-from pathlib import Path
 from urllib.parse import urlparse
-from pydantic import BaseModel, Field, ConfigDict, validator
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 import yaml
-import shutil
 from crewai_tools import SerperDevTool, FileWriterTool, RagTool
 from tools.webscraping import WebScrapingTool
 from tools.file_reader import MultiFormatFileReader
 from tools.generate_excel import ExcelGeneratorTool
-from datetime import datetime
+from langfuse import Langfuse
 
 from openinference.instrumentation.crewai import CrewAIInstrumentor
 from openinference.instrumentation.litellm import LiteLLMInstrumentor
 
-
-import chromadb
-
-# Use the new ChromaDB API
-client = chromadb.PersistentClient(path=".chromadb")
+CrewAIInstrumentor().instrument(skip_dep_check=True)
+LiteLLMInstrumentor().instrument()
 
 # --- PYDANTIC MODELS ---
 class UnidadeMedida(str, Enum):
@@ -103,9 +91,6 @@ class ExcelGenerationResult(BaseModel):
 class RecipeData(BaseModel):
     fichas_tecnicas: List[FichaTecnica] = Field(..., description="Lista de todas as fichas técnicas")
     base_de_insumos: List[Insumo] = Field(..., description="Base unificada de insumos")
-
-
-from langfuse import Langfuse
 
 # Configure logging with proper file handle management
 log_file_handler = logging.FileHandler('fichas_tecnicas.log')

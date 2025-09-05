@@ -19,13 +19,14 @@ task_extract_fichas_tecnicas:
     - Do NOT skip any recipe, regardless of complexity or format
     - Create one FichaTecnica for each recipe found ONLY from provided sources
     - DO NOT invent, create, or add recipes not explicitly found in the provided sources
+    - DO NOT search for or generate recipes from the internet
     - Count recipes as you process: "Processing recipe 1 of X: [name]"
     
     **PROCESSING WORKFLOW PER RECIPE:**
     1. Extract ONLY name, ingredients, quantities, yield from provided source content
     2. Search for modo_preparo ONLY in source content
-    3. If modo_preparo not found in source → web search for recipe preparation
-    4. If web search fails → set modo_preparo as empty list []
+    3. If modo_preparo not found in source → use generic preparation steps based on ingredient list
+    4. Never web search for complete recipes - only use provided source content
     5. Calculate viable selling price based on ingredient costs (minimum 3x cost)
     6. Get correction factors using fatores_rag tool
     
@@ -36,11 +37,11 @@ task_extract_fichas_tecnicas:
     
     **CRITICAL: MODO DE PREPARO EXTRACTION MANDATORY:** 
     - EVERY recipe MUST have modo_preparo field populated
-    - Extract preparation steps in this exact order:
+    - Extract preparation steps ONLY from provided sources:
       1. FIRST: Look for preparation steps in source content (lines with "modo", "preparo", "como fazer", numbered steps, cooking instructions)
-      2. SECOND: If not found in source, ALWAYS use web_search with query "receita [nome_preparacao] modo preparo"
-      3. THIRD: If web search returns nothing, use web_search with query "[nome_preparacao] como fazer passo a passo"
-      4. LAST RESORT: If all searches fail, modo_preparo = ["1. Preparar conforme instruções padrão da receita"]
+      2. SECOND: If not found in source, create generic preparation steps based on ingredients and cooking method
+      3. LAST RESORT: If no preparation info available, modo_preparo = ["1. Preparar conforme instruções padrão da receita"]
+    - DO NOT use web search to find preparation methods - only use provided source content
     
     **MODO DE PREPARO FORMATTING:**
     - Convert ALL steps to numbered list: ["1. Primeiro passo", "2. Segundo passo", etc.]
@@ -51,9 +52,10 @@ task_extract_fichas_tecnicas:
     **CORRECTION FACTORS MANDATORY:**
     - ALWAYS use fatores_rag tool first with ingredient name (ex: query "frango" to get FC=2.38)
     - Extract exact factor number from RAG result (ex: "Frango | 2,38" → fator_correcao: 2.38)
-    - If ingredient not found in RAG, use web_search with query "fator correção [ingredient] perdas"
+    - If ingredient not found in RAG, use web_search ONLY for correction factors with query "fator correção [ingredient] perdas"
     - Default to 1.0 ONLY if neither RAG nor web search returns a factor
     - NEVER assume fator_correcao=1.0 without checking RAG first
+    - IMPORTANT: web_search should ONLY be used for correction factors, NEVER for complete recipes
     
     **STANDARDIZATION:**
     - Units: MANDATORY "kg" or "L" (never grams/ml)
