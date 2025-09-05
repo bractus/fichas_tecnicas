@@ -456,7 +456,7 @@ def fichas_tecnicas(sources: list, color1: str = '4472C4', color2: str = 'D9E1F2
             tasks=[task_read_sources, task_extract_fichas_tecnicas, task_extract_base_insumos, task_consolidate_data, task_generate_excel],
             process=Process.sequential,
             # manager_agent=data_consolidator_agent,
-            memory=False,
+            memory=True,
             verbose=False
         )
         logger.info("Crew assembled successfully")
